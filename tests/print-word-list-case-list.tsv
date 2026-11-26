@@ -1,0 +1,27 @@
+# print-word-list.shのケースの一覧。列は、説明の文、動かす場所、止める語の一覧の中身、確かめる語の一覧の中身、導入先ごとの語の一覧の中身、期待する結果である。
+# 場所は、ハーネス（gitのリポジトリにしたハーネスのコピー）、導入先（.harness/rulesのあるgitのリポジトリ）、worktree（導入先のworktree）、導入なし（.harness/rulesの無いgitのリポジトリ）、rulesがリンク（.harness/rulesが/dev/nullへのリンク）、gitの外（.harness/rulesのあるgitの外のフォルダー）、補助なし（print-main-worktree-path.shを置かないハーネスのコピーで、導入先で動かす）である。
+# 中身はprintfの%bの形で書き、「-」はファイルを作らない。導入先ごとの語の一覧は、ハーネスでは、ハーネスのコピーの.harness/rules/に置く。worktreeでは、worktreeの側に壊れた一覧を置く。
+# 結果は、終了コード、標準出力の行（タブを「/」に、改行を「;」にしたもの。無ければ「-」）、標準エラーの行の数である。
+ハーネスのリポジトリでは、確かめる語もbannedにする。	ハーネス	b\tr\n	a\tr\tx\n	-	0 banned/b/r/;banned/a/r/x 0
+ハーネスのリポジトリでは、壊れた導入先ごとの語の一覧があっても読まない。	ハーネス	b\tr\n	a\tr\tx\n	broken\n	0 banned/b/r/;banned/a/r/x 0
+導入したリポジトリで答えの無い確かめる語は、undecidedにする。	導入先	b\tr\n	a\tr\tx\n	-	0 banned/b/r/;undecided/a/r/x 0
+ambiguous-bannedと答えた確かめる語は、bannedにする。	導入先	b\tr\n	a\tr\tx\n	ambiguous-banned\ta\n	0 banned/b/r/;banned/a/r/x 0
+ambiguous-allowedと答えた確かめる語は、ambiguousにする。	導入先	b\tr\n	a\tr\tx\n	ambiguous-allowed\ta\n	0 banned/b/r/;ambiguous/a/r/x 0
+「a|c」への答えは、確かめる語の「a」に当てない。	導入先	b\tr\n	a\tr\na|c\tr\n	ambiguous-banned\ta|c\n	0 banned/b/r/;undecided/a/r/;banned/a|c/r/ 0
+確かめる語と同じパターンのbannedの行は、禁止にする答えとして、ハーネスの代わりの言い方と除く形の1行にする。	導入先	b\tr\n	a\tr\tx\n	banned\ta\tq\n	0 banned/b/r/;banned/a/r/x 0
+止める語と同じパターンのbannedの行は、ハーネスの行の1行にまとめる。	導入先	b\tr\n	a\tr\tx\n	banned\tb\tq\n	0 banned/b/r/;undecided/a/r/x 0
+導入先だけの止める語は、ハーネスの語の後ろに足す。	導入先	b\tr\n	a\tr\tx\n	banned\tz\tq\tzz\n	0 banned/b/r/;undecided/a/r/x;banned/z/q/zz 0
+導入先ごとの語の一覧の「\」を、そのまま出す。	導入先	b\tr\n	a\tr\n	banned\tv1\\.0\tr\\s\n	0 banned/b/r/;undecided/a/r/;banned/v1\.0/r\s/ 0
+対応する確かめる語の無い答えは、知らせを出して0で終わる。	導入先	b\tr\n	a\tr\tx\n	ambiguous-banned\tzz\n	0 banned/b/r/;undecided/a/r/x 1
+止める語にambiguous-allowedと答えても、止める語のまま止め、知らせを出す。	導入先	b\tr\n	a\tr\tx\n	ambiguous-allowed\tb\n	0 banned/b/r/;undecided/a/r/x 1
+壊れた導入先ごとの語の一覧は、誤りの文を出し、1で終わる。	導入先	b\tr\n	a\tr\tx\n	broken\n	1 - 1
+worktreeでは、メインの作業フォルダーの一覧を読む。	worktree	b\tr\n	a\tr\tx\n	ambiguous-banned\ta\n	0 banned/b/r/;banned/a/r/x 0
+.harness/rulesの無いリポジトリでは、確かめる語をambiguousにする。	導入なし	b\tr\n	a\tr\tx\n	-	0 banned/b/r/;ambiguous/a/r/x 0
+.harness/rulesが/dev/nullへのリンクなら、導入していないとして、確かめる語をambiguousにする。	rulesがリンク	b\tr\n	a\tr\tx\n	-	0 banned/b/r/;ambiguous/a/r/x 0
+gitの外では、導入先ごとの語の一覧があっても読まず、確かめる語をambiguousにする。	gitの外	b\tr\n	a\tr\tx\n	ambiguous-banned\ta\n	0 banned/b/r/;ambiguous/a/r/x 0
+print-main-worktree-path.shの無いハーネスのコピーでは、決められない文を出し、1で終わる。	補助なし	b\tr\n	a\tr\tx\n	-	1 - 2
+2つの一覧の語を、種類、パターン、代わりの言い方、除く形の順に出す。	導入なし	# x\na\tb\tc\n	d\te\n	-	0 banned/a/b/c;ambiguous/d/e/ 0
+最後の行に改行が無くても、その行の語を出す。	導入なし	a\tb\n	d\te	-	0 banned/a/b/;ambiguous/d/e/ 0
+代わりの言い方の無い行があれば、1で終わる。	導入なし	a\tb\n	d\n	-	1 - 1
+確かめる語の一覧が無ければ、1で終わる。	導入なし	a\tb\n	-	-	1 - 1
+2つの一覧に語が無ければ、1で終わる。	導入なし	# x\n	\n	-	1 - 1

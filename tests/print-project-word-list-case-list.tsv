@@ -1,0 +1,30 @@
+# print-project-word-list.shのケースの一覧。列は、説明の文、一覧の中身、期待する結果である。
+# 中身はprintfの%bの形で書き、「-」はファイルを作らず、「!」は読めないファイルに、「@」はシンボリックリンクに、「/」はフォルダーにする。
+# 結果は、終了コード、標準出力の行（タブを「/」に、改行を「;」にしたもの。無ければ「-」）、誤りを示した行番号（無ければ「-」）である。
+一覧が無ければ、何も出さずに0で終わる。	-	0 - -
+コメントと空行だけなら、何も出さずに0で終わる。	# x\n\n	0 - -
+3つの種類の行を、4列の形で出す。	banned\ta\tb\tc\nambiguous-banned\td\nambiguous-allowed\te\n	0 banned/a/b/c;ambiguous-banned/d//;ambiguous-allowed/e// -
+除く形の無いbannedの行は、除く形を空にして出す。	banned\ta\tb\n	0 banned/a/b/ -
+最後の行に改行が無くても、その行を出す。	ambiguous-banned\td	0 ambiguous-banned/d// -
+パターンと代わりの言い方の「\」を、そのまま出す。	banned\tv1\\.0\tr\\s\n	0 banned/v1\.0/r\s/ -
+答えのパターンが正規表現でも、文字列のまま出す。	ambiguous-banned\ta|b\n	0 ambiguous-banned/a|b// -
+同じパターンに同じ答えの行が2つあれば、両方を出す。	ambiguous-banned\ta\nbanned\ta\tr\n	0 ambiguous-banned/a//;banned/a/r/ -
+代わりの言い方が空のbannedの行を渡すと、その行を示して1で終わる。	banned\tp\t\tx\n	1 - 1
+代わりの言い方の列の無いbannedの行を渡すと、その行を示して1で終わる。	banned\tp\n	1 - 1
+列の多いbannedの行を渡すと、その行を示して1で終わる。	banned\ta\tb\tc\td\n	1 - 1
+列の多いambiguous-bannedの行を渡すと、その行を示して1で終わる。	ambiguous-banned\ta\tb\n	1 - 1
+パターンが空のambiguous-allowedの行を渡すと、その行を示して1で終わる。	ambiguous-allowed\t\n	1 - 1
+知らない種類の行を渡すと、その行を示して1で終わる。	allowed\ta\n	1 - 1
+タブの代わりに空白で区切った行を渡すと、その行を示して1で終わる。	banned a b\n	1 - 1
+CRのある行を渡すと、その行を示して1で終わる。	banned\ta\tb\r\n	1 - 1
+コメントのあとの誤りの行を渡すと、ファイルの中の行番号を示す。	# x\nwrong\ta\n	1 - 2
+誤りの行が2つあれば、2つとも示して1で終わる。	wrong\nambiguous-banned\ta\nwrong\n	1 - 1 3
+同じパターンにambiguous-bannedとambiguous-allowedがあれば、あとの行を示して1で終わる。	ambiguous-banned\ta\nambiguous-allowed\ta\n	1 - 2
+同じパターンにambiguous-allowedとbannedがあれば、あとの行を示して1で終わる。	ambiguous-allowed\ta\nbanned\ta\tr\n	1 - 2
+grepが読めないパターンを渡すと、その行を示して1で終わる。	ambiguous-banned\tok\nbanned\ta(\tr\n	1 - 2
+grepが読めない除く形を渡すと、その行を示して1で終わる。	banned\ta\tr\tb(\n	1 - 1
+末尾に縦線のある除く形は、空の文字列に当たるので、その行を示して1で終わる。	banned\ta\tr\tb|\n	1 - 1
+繰り返しの記号だけの除く形は、空の文字列に当たるので、その行を示して1で終わる。	ambiguous-banned\tok\nbanned\ta\tr\tx*\n	1 - 2
+読めない一覧を渡すと、1で終わる。	!	1 - -
+シンボリックリンクの一覧を渡すと、リンク先を読まずに1で終わる。	@	1 - -
+フォルダーを渡すと、1で終わる。	/	1 - -
