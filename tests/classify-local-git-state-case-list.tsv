@@ -1,0 +1,7 @@
+# classify-local-git-state.shのケースの一覧。列は、説明の文、gitの設定の確認の代わりのスクリプトの終了コード、それが標準エラーに出す行（printfの%bの形）、期待する結果（判定と、理由の文の「あります（」と「）。認めると」の間、間が無ければ「-」）である。
+# どのケースも、通す判定のgit fetchを渡す。
+頭の無い行（gitの警告）が先にあっても、見つけたものの文を理由の文に入れる。	1	warning: core.fsyncObjectFiles is deprecated\nfind-git-setting-in-working-tree.sh: 見つけたもの。	ask 見つけたもの。
+行の途中に探す処理の名前があるbashのエラーが先にあっても、その行ではなく、見つけたものの文を理由の文に入れる。	1	/x/scripts/find-git-setting-in-working-tree.sh: line 61: cd: /nope: No such file or directory\nfind-git-setting-in-working-tree.sh: 見つけたもの。	ask 見つけたもの。
+送り方の設定の確認の行が先なら、その行を理由の文に入れる。	1	find-git-transport-setting.sh: 先の見つけたもの。\nfind-git-setting-in-working-tree.sh: あとの見つけたもの。	ask 先の見つけたもの。
+頭の行が無いときは、何を見つけたかを読めなかったと理由の文に書く。	1	warning: only	ask 何を見つけたかを読めませんでした
+見つけないときは、標準エラーに行があっても確認を求めない。	0	warning: only	allow -

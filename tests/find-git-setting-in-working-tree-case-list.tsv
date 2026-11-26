@@ -1,0 +1,117 @@
+# find-git-setting-in-working-tree.shのケースの一覧。列は、説明の文、動かす場所（tests/create-case-repository.shのcreate_case_repositoryの場所）、動かす前に動かす設定のコマンド、期待する終了コードである。
+# 設定のコマンドは、動かす場所で、HOMEをケースのフォルダーにして動かす。CASE_HARNESS_ROOTは、テストで決めたハーネスの場所である。「-」は何もしないことを表す。
+何も設定していないリポジトリで動かすと、何も見つけない。	git	-	0
+リポジトリのサブフォルダーで動かすと、何も見つけない。	subfolder	-	0
+worktreeで動かすと、何も見つけない。	worktree	-	0
+core.hooksPathが作業フォルダーの中の相対パスを指すと、見つける。	git	git config core.hooksPath .husky/_	1
+core.hooksPathが作業フォルダーの中の絶対パスを指すと、見つける。	git	git config core.hooksPath "$PWD/hooks"	1
+PCの設定のcore.fsyncObjectFilesでgitが警告を出しても、ふつうのリポジトリでは何も見つけず、警告を標準エラーに出さない。	git	git config --global core.fsyncObjectFiles true	0
+PCの設定のcore.fsyncObjectFilesでgitが警告を出しても、作業フォルダーの中を指すcore.hooksPathを見つけ、警告を標準エラーに出さない。	git	git config --global core.fsyncObjectFiles true && git config core.hooksPath .husky/_	1
+core.sshCommandの値に改行があっても、見つけたものを標準エラーの1行で出す。	git	git config core.sshCommand "$(printf './tools/x\nssh')"	1
+名前に改行のあるファイルをinclude.pathで読み、そこにhttp.proxyがあっても、見つけたものを標準エラーの1行ずつで出す。	git	mkdir -p "$(printf 'a\nb')" && printf '[http]\n\tproxy = http://127.0.0.1:8080\n' > "$(printf 'a\nb')/c" && git config include.path "$PWD/$(printf 'a\nb')/c"	1
+名前の最後が改行のフォルダーのファイルにある相対パスのinclude.pathは、場所を求められないので作業フォルダーから読んで見つけ、cdのエラーを標準エラーに出さない。	git	mkdir "$HOME/"$'d\n' && printf '[include]\n\tpath = inner\n' > "$HOME/"$'d\n/c' && git config include.path "$HOME/"$'d\n/c'	1
+作業フォルダーの外の、名前の最後が改行のフォルダーのファイルにあるhttp.proxyは、リポジトリの設定かを決められないので、見つける。	git	mkdir "$HOME/"$'d\n' && printf '[http]\n\tproxy = http://127.0.0.1:8080\n' > "$HOME/"$'d\n/c' && git config include.path "$HOME/"$'d\n/c'	1
+core.hooksPathが作業フォルダーの外の絶対パスを指すと、何も見つけない。	git	git config core.hooksPath /usr/share/git-core/templates/hooks	0
+PCの設定のcore.hooksPathが作業フォルダーの外を指すと、何も見つけない。	git	git config --global core.hooksPath "$HOME/hooks"	0
+worktreeで、core.hooksPathがメインの.gitの中を指すと、見つける。	worktree	git config core.hooksPath "$(cd "$(git rev-parse --git-common-dir)" && pwd -P)/custom-hooks"	1
+include.pathが相対パスを指すと、見つける。	git	git config include.path ../extra.config	1
+includeIfのpathが作業フォルダーの中を指すと、見つける。	git	git config includeIf.gitdir:/.path "$PWD/extra.config"	1
+PCの設定のinclude.pathの相対パスは、見つけない。	git	git config --global include.path .gitconfig.local	0
+include.pathが、.gitの中の名前だけのファイルを指すと、ファイルが無くても見つける。	git	git config include.path extra.config	1
+hook.*.commandがハーネスの場所のスクリプトを指すと、何も見つけない。	git	git config hook.harness-pre-push.command "$CASE_HARNESS_ROOT/scripts/deny-protected-branch-push.sh"	0
+hook.*.commandが作業フォルダーの中のスクリプトを指すと、見つける。	git	git config hook.lint.command "$PWD/scripts/lint.sh"	1
+hook.*.commandが絶対パスでないコマンドなら、見つける。	git	git config hook.lint.command "npx lint-staged"	1
+hook.*.commandがハーネスの場所と同じ文字で始まる別の場所を指すと、見つける。	git	git config hook.lint.command "$CASE_HARNESS_ROOT-other/x.sh"	1
+extensions.worktreeConfigが有効なら、見つける。	git	git config extensions.worktreeConfig true	1
+.git/hooksに、動かせるpre-pushがあると、見つける。	git	printf '#!/bin/sh\nexec sh ./x.sh\n' > .git/hooks/pre-push && chmod +x .git/hooks/pre-push	1
+.git/hooksに、動かせるreference-transactionがあると、見つける。	git	printf '#!/bin/sh\nexit 0\n' > .git/hooks/reference-transaction && chmod +x .git/hooks/reference-transaction	1
+.git/hooksに、動かせるpre-auto-gcがあると、見つける。	git	printf '#!/bin/sh\nexec sh ./x.sh\n' > .git/hooks/pre-auto-gc && chmod +x .git/hooks/pre-auto-gc	1
+.git/hooksのpre-pushが動かせないファイルなら、見つけない。	git	printf '#!/bin/sh\nexit 0\n' > .git/hooks/pre-push && chmod -x .git/hooks/pre-push	0
+core.hooksPathが作業フォルダーの外を指しても、そこに動かせるpre-pushがあれば、見つける。	git	mkdir -p "$HOME/hooks" && printf '#!/bin/sh\nexit 0\n' > "$HOME/hooks/pre-push" && chmod +x "$HOME/hooks/pre-push" && git config core.hooksPath "$HOME/hooks"	1
+worktreeで、メインの.git/hooksに動かせるpre-pushがあると、見つける。	worktree	printf '#!/bin/sh\nexit 0\n' > "$(git rev-parse --git-common-dir)/hooks/pre-push" && chmod +x "$(git rev-parse --git-common-dir)/hooks/pre-push"	1
+.git/hooksのreference-transactionが、作業フォルダーの中の動かせないファイルへのリンクでも、見つける。	git	mkdir -p tools && printf '#!/bin/sh\nexit 0\n' > tools/reference-transaction && ln -s ../../tools/reference-transaction .git/hooks/reference-transaction	1
+.git/hooksのpre-pushが、先の無いリンクでも、見つける。	git	ln -s ../../tools/pre-push .git/hooks/pre-push	1
+.git/hooksのフォルダーが、作業フォルダーの中のフォルダーへのリンクなら、見つける。	git	mkdir -p .githooks && rm -rf .git/hooks && ln -s ../.githooks .git/hooks	1
+.git/hooksのフォルダーが、作業フォルダーの外のフォルダーへのリンクでも、見つける。	git	mkdir -p "$HOME/shared-hooks" && rm -rf .git/hooks && ln -s "$HOME/shared-hooks" .git/hooks	1
+core.hooksPathの最後に/があっても、そのフォルダーが作業フォルダーの中へのリンクなら、見つける。	git	mkdir -p githooks && ln -s "$PWD/githooks" "$HOME/githooks-link" && git config core.hooksPath "$HOME/githooks-link/"	1
+core.hooksPathの最後に/が2つあっても、そのフォルダーがリンクなら、見つける。	git	mkdir -p githooks && ln -s "$PWD/githooks" "$HOME/githooks-link" && git config core.hooksPath "$HOME/githooks-link//"	1
+.git/hooksのpre-commitのリンク（pushとfetchで動かないフック）は、見つけない。	git	mkdir -p tools && : > tools/pre-commit && ln -s ../../tools/pre-commit .git/hooks/pre-commit	0
+.git/hooksのreference-transactionが、作業フォルダーの中の動かせないファイルへのハードリンクでも、見つける。	git	mkdir -p tools && printf '#!/bin/sh\nexit 0\n' > tools/reference-transaction && ln tools/reference-transaction .git/hooks/reference-transaction	1
+.git/hooksのpre-commitのハードリンク（pushとfetchで動かないフック）は、見つけない。	git	mkdir -p tools && : > tools/pre-commit && ln tools/pre-commit .git/hooks/pre-commit	0
+worktreeで、メインの.git/hooksのpre-pushが動かせないファイルへのリンクでも、見つける。	worktree	: > "$HOME/pre-push" && ln -s "$HOME/pre-push" "$(git rev-parse --git-common-dir)/hooks/pre-push"	1
+core.sshCommandが作業フォルダーの中のスクリプトを指すと、見つける。	git	git config core.sshCommand ./ssh.sh	1
+core.sshCommandの引数が作業フォルダーの一番上のファイルを指すと、見つける。	git	touch ssh_config && git config core.sshCommand "ssh -F ssh_config"	1
+core.sshCommandが作業フォルダーの外の鍵を指すと、何も見つけない。	git	git config core.sshCommand "ssh -i ~/.ssh/id -o IdentitiesOnly=yes"	0
+core.sshCommandが、.で始まるファイルの名前なら、ファイルが無くても見つける。	git	git config core.sshCommand .ssh-wrapper	1
+core.sshCommandが、~で作業フォルダーの中のファイルを指すと、見つける。	git	git config core.sshCommand '~/project/ssh.sh'	1
+core.sshCommandの引数が、/の無い~で始まる語（いないユーザーなら作業フォルダーのファイル）なら、見つける。	git	git config core.sshCommand 'ssh -F ~cfg'	1
+core.sshCommandの-Fにつないだ値が作業フォルダーの中を指すと、見つける。	git	git config core.sshCommand 'ssh -F./ssh_config'	1
+credential.helperの--file=の値が作業フォルダーの中を指すと、見つける。	git	git config credential.helper 'store --file=./creds'	1
+credential.helperが作業フォルダーの中のスクリプトを動かすと、見つける。	git	git config credential.helper '!./helper.sh get'	1
+credential.helperがghの認証を動かすと、何も見つけない。	git	git config credential.helper '!/usr/bin/gh auth git-credential'	0
+credential.helperが、空白を\で外した作業フォルダーの外の絶対パスなら、何も見つけない。	git	git config credential.helper '/opt/Program\ Files/Git/git-credential-manager.exe'	0
+credential.helperが、引用符で囲んだ作業フォルダーの外の絶対パスなら、何も見つけない。	git	git config credential.helper '"/opt/Program Files/gcm.exe" --no-ui'	0
+credential.helperが、引用符で囲んだ作業フォルダーの中の空白を含むパスなら、見つける。	git	git config credential.helper "\"$PWD/a b/helper.sh\" get"	1
+credential.helperの引用符が閉じていなければ、見つける。	git	git config credential.helper '"/opt/gcm.exe'	1
+credential.helperが、引用符の中のコードで一番上のファイルを動かすと、見つける。	git	touch cred.sh && git config credential.helper "!sh -c 'sh cred.sh'"	1
+credential.helperが、引数のパターンでファイルを動かすと、見つける。	git	git config credential.helper '!sh *.sh'	1
+credential.helperが、関数にまとめたシェルのコードなら、見つける。	git	touch x.sh && git config credential.helper '!f() { sh x.sh; }; f'	1
+credential.helperが、1つ目の語でコマンドの置き換えを使うと、見つける。	git	git config credential.helper '!$(cat${IFS}helper)'	1
+credential.helperが、空白と括弧を\で外した作業フォルダーの外の絶対パスなら、何も見つけない。	git	git config credential.helper '/opt/Program\ Files\ \(x86\)/gcm.exe'	0
+core.sshCommandが、引数でシェルのコード（ProxyCommand）を渡すと、見つける。	git	git config core.sshCommand '/opt/x/ssh -o "ProxyCommand /usr/bin/nc %h %p"'	1
+credential.helperが、1つ目の語の;のあとで作業フォルダーのファイルを動かすと、見つける。	git	touch x.sh && git config credential.helper '!/usr/bin/true;./x.sh'	1
+credential.helperが、1つ目の語のパターンで作業フォルダーのファイルを動かすと、見つける。	git	touch x.sh && git config credential.helper "!${PWD%?}?/x.sh"	1
+credential.helperが、引数の代入で作業フォルダーのファイルを読ませると、見つける。	git	touch x.sh && git config credential.helper '!env BASH_ENV=x.sh bash -c :'	1
+credential.helperが、=を含む作業フォルダーの中のパスを動かすと、語の全体も読み、見つける。	git	git config credential.helper '!./run=/usr/bin/x'	1
+core.sshCommandの引数が、/を含む代入の形なら、語の全体も相対パスとして読み、見つける。	git	git config core.sshCommand 'ssh -o UserKnownHostsFile=/dev/null'	1
+credential.helperが、引数の{}の展開で作業フォルダーのファイルを動かすと、見つける。	git	git config credential.helper '!sh {x,y}.sh'	1
+credential.helperが、引数のバッククォートで作業フォルダーのファイルの名前を読むと、見つける。	git	git config credential.helper '!sh `cat name.txt`'	1
+URLごとのcredential.helperが作業フォルダーの中を指すと、見つける。	git	git config credential.https://example.com.helper "$PWD/helper.sh"	1
+core.fsmonitorがtrueなら、何も見つけない。	git	git config core.fsmonitor true	0
+core.fsmonitorが作業フォルダーの中のスクリプトを指すと、見つける。	git	git config core.fsmonitor "$PWD/fsmonitor.sh"	1
+remote.*.uploadpackが作業フォルダーの中を指すと、見つける。	git	git config remote.origin.uploadpack ./evil.sh	1
+remote.*.receivepackが作業フォルダーの中を指すと、見つける。	git	git config remote.origin.receivepack ./evil.sh	1
+gpg.programが作業フォルダーの中を指すと、見つける。	git	git config gpg.program ./gpg.sh	1
+gpg.programが、作業フォルダーの外の空白を含む絶対パスなら、何も見つけない。	git	git config gpg.program '/opt/Program Files (x86)/GnuPG/bin/gpg.exe'	0
+gpg.ssh.programが作業フォルダーの中を指すと、見つける。	git	git config gpg.ssh.program ./ssh-keygen.sh	1
+gpg.ssh.programが、作業フォルダーの外の空白を含む絶対パスなら、何も見つけない。	git	git config gpg.ssh.program '/opt/Program Files/ssh-keygen'	0
+core.gitProxyが作業フォルダーの中のスクリプトを指すと、見つける。	git	git config core.gitProxy ./proxy.sh	1
+core.gitProxyが、作業フォルダーの外の空白を含む絶対パスなら、何も見つけない。	git	git config core.gitProxy '/opt/Git Proxy/proxy.sh'	0
+core.askPassが作業フォルダーの中を指すと、見つける。	git	git config core.askPass ./askpass.sh	1
+core.askPassが、作業フォルダーの外の空白を含む絶対パスなら、何も見つけない。	git	git config core.askPass '/opt/Git Ask/askpass.sh'	0
+core.sshCommandが、..で作業フォルダーの中へ戻る絶対パスなら、見つける。	git	git config core.sshCommand "${PWD%/*}/other/../${PWD##*/}/ssh.sh"	1
+リモートが作業フォルダーの中のbareのリポジトリなら、見つける。	git	git init -q --bare evil.git && git remote add evil ./evil.git	1
+pushurlが作業フォルダーの中を指すと、見つける。	git	git remote add origin https://example.invalid/a/b.git && git config remote.origin.pushurl "file://$PWD/evil.git"	1
+insteadOfの書き換え先が作業フォルダーの中なら、見つける。	git	git config url."$PWD/evil.git".insteadOf git@example.invalid:	1
+pushInsteadOfの書き換え先が作業フォルダーの中なら、見つける。	git	git config url."$PWD/evil.git".pushInsteadOf git@example.invalid:	1
+リモートが、/のあとに:を含む作業フォルダーの中のパスなら、見つける。	git	mkdir -p a && git init -q --bare 'a/b:c.git' && git remote add evil 'a/b:c.git'	1
+リモートがHTTPSのURLなら、何も見つけない。	git	git remote add origin https://example.invalid/a/b.git	0
+リモートがSSHのホストとパスなら、何も見つけない。	git	git remote add origin git@example.invalid:a/b.git	0
+リモートが作業フォルダーの外のパスなら、何も見つけない。	git	git remote add origin /srv/repository/b.git	0
+リモートがext::のURLなら、見つける。	git	git remote add origin 'ext::sh -c true'	1
+insteadOfの書き換え先がext::のURLなら、見つける。	git	git config url.'ext::sh -c true'.insteadOf https://example.invalid/	1
+PCの設定のinsteadOfの書き換え先がext::のURLでも、見つける。	git	git config --global url.'ext::sh -c true'.insteadOf https://example.invalid/	1
+リポジトリの設定のprotocol.ext.allowは、見つける。	git	git config protocol.ext.allow always	1
+リポジトリの設定のprotocol.allowは、見つける。	git	git config protocol.allow always	1
+PCの設定のprotocol.file.allowは、見つけない。	git	git config --global protocol.file.allow always	0
+リポジトリの設定のhttp.proxyは、見つける。	git	git config http.proxy http://127.0.0.1:8080	1
+リポジトリの設定の、URLごとのhttp.<URL>.proxyも、見つける。	git	git config http.https://example.invalid/.proxy http://127.0.0.1:8080	1
+PCの設定のhttp.proxyは、見つけない。	git	git config --global http.proxy http://proxy.example.invalid:8080	0
+リポジトリの設定のfalseのhttp.sslVerifyは、見つける。	git	git config http.sslVerify false	1
+リポジトリの設定のtrueのhttp.sslVerifyは、見つけない。	git	git config http.sslVerify true	0
+リポジトリの設定の空のhttp.sslVerify（gitはfalseと読む）は、見つける。	git	git config http.sslVerify ''	1
+リポジトリの設定の0kのhttp.sslVerify（gitは0と読む）は、見つける。	git	git config http.sslVerify 0k	1
+リポジトリの設定のyesのhttp.sslVerifyは、見つけない。	git	git config http.sslVerify yes	0
+リポジトリの設定の、gitが真偽として読めないhttp.sslVerifyは、見つける。	git	git config http.sslVerify maybe	1
+insteadOfとリモートのURLがつながってext::のURLになると、見つける。	git	git config url.ext:.insteadOf https://example.invalid/ && git remote add origin 'https://example.invalid/:sh -c true'	1
+pushInsteadOfとリモートのURLがつながってext::のURLになると、見つける。	git	git config url.ext:.pushInsteadOf https://example.invalid/ && git remote add origin 'https://example.invalid/:sh -c true'	1
+リポジトリの設定の、リモートごとのremote.<名前>.proxyは、見つける。	git	git remote add origin https://example.invalid/a/b.git && git config remote.origin.proxy http://127.0.0.1:8080	1
+worktreeで、メインの.git/configのhttp.proxyは、見つける。	worktree	git config http.proxy http://127.0.0.1:8080	1
+.git/commondirがあると、見つける。	git	git init -q --bare ../evil && printf '%s\n' ../../evil > .git/commondir	1
+.git/modulesがあると、見つける。	git	mkdir -p .git/modules/x	1
+worktreeの.gitが、メインの.gitを指すと、見つける。	worktree	printf 'gitdir: %s\n' "$(cd ../project/.git && pwd -P)" > .git	1
+worktreeの.gitを、作業フォルダーの中に作った偽のリポジトリのworktrees/に向けると、見つける。	worktree	git init -q x && mkdir -p x/.git/worktrees/y && printf 'ref: refs/heads/main\n' > x/.git/worktrees/y/HEAD && printf '../..\n' > x/.git/worktrees/y/commondir && printf '%s/.git\n' "$(pwd -P)" > x/.git/worktrees/y/gitdir && printf 'gitdir: %s/x/.git/worktrees/y\n' "$(pwd -P)" > .git	1
+worktreeのcommondirが、別の場所を指すと、見つける。	worktree	git init -q --bare ../evil && printf '%s\n' "$(cd ../evil && pwd -P)" > "$(git rev-parse --git-dir)/commondir"	1
+サブモジュールの中で動かすと、見つける。	submodule	-	1
+.gitを外に置いたリポジトリで動かすと、見つける。	separate	-	1
+gitの外で動かすと、見つける。	外	-	1

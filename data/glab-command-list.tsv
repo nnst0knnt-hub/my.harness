@@ -1,0 +1,248 @@
+# glabのコマンドの一覧。scripts/classify-glab-command.shが、glabのあとの最初のオプションの前の4語までに最も長く当たる行で判定する。一覧に無いコマンド（別名と、利用者の別名を含む）は止める。
+# 列は、コマンドの名前の並び、判定、理由の種類、止める短い形（「-」は無い）、要る引数（「-」は無い）である。glab v1.131.0の文書の元とソースで洗い出した。
+# 要る引数は、-mが本文の-m、numberがコマンドの名前のすぐ後ろの番号、--source-branchが送り元のブランチである。scripts/find-glab-missing-argument.shが確かめる。
+# 判定は、allowが通す、askが確認を求める、denyが止める、apiがscripts/classify-glab-api-command.shに渡すである。止めるまとまり（例：variable）は、まとまりの行1つで、下のすべてのコマンドを止める。
+# 理由の種類は、通す行のreadが許すオプションの一覧で確かめる、bareが引数の無いときだけ通す、確認を求める行のwriteがリモートへの書き込み、sendが手元のファイルを読んで送る、localが手元かgitを外で書き換える、screenが画面を開くか終わらない、checkoutがmr checkoutの決まった文、止める行のtokenがトークンか秘密の値、outsideが外でほかのプログラムを動かすか外の設定を書く、uploadが手元の記録を送る、pushがgitのpushを中で動かす、repo-viewがrepo viewの決まった文、cloneが外で新しいリポジトリをcloneするである。
+alias delete	ask	write	-	-
+alias list	ask	write	-	-
+alias set	deny	outside	-	-
+api	api	api	-	-
+artifact-registry get-token	deny	token	-	-
+artifact-registry login	deny	outside	-	-
+artifact-registry status	ask	write	-	-
+attestation verify	ask	send	-	-
+auth	deny	token	-	-
+auth status	allow	bare	-	-
+autoflow workflow cancel	ask	write	-	-
+autoflow workflow get	ask	write	-	-
+autoflow workflow send	ask	write	-	-
+autoflow workflow start	ask	write	-	-
+changelog generate	ask	write	-	-
+check-update	ask	write	-	-
+ci artifact	ask	local	-	-
+ci cancel job	ask	write	-	-
+ci cancel pipeline	ask	write	-	-
+ci ci lint	ask	send	-	-
+ci ci trace	ask	screen	-	-
+ci ci view	ask	screen	-	-
+ci config compile	ask	send	-	-
+ci delete	ask	write	-	-
+ci get	allow	read	-	-
+ci lint	ask	send	-	-
+ci list	allow	read	-	-
+ci retry	ask	write	-	-
+ci run	ask	write	-	-
+ci run-trig	ask	write	-	-
+ci status	ask	screen	-	-
+ci trace	ask	screen	-	-
+ci trigger	ask	write	-	-
+ci view	ask	screen	-	-
+cluster agent bootstrap	ask	write	-	-
+cluster agent check-manifest-usage	ask	write	-	-
+cluster agent get-token	deny	token	-	-
+cluster agent list	ask	write	-	-
+cluster agent token list	ask	write	-	-
+cluster agent token revoke	ask	write	-	-
+cluster agent token-cache clear	ask	write	-	-
+cluster agent token-cache list	ask	write	-	-
+cluster agent update-kubeconfig	deny	outside	-	-
+cluster graph	ask	write	-	-
+completion	ask	write	-	-
+config	deny	token	-	-
+container-registry repository delete	ask	write	-	-
+container-registry repository list	ask	write	-	-
+container-registry repository view	ask	write	-	-
+container-registry tag delete	ask	write	-	-
+container-registry tag list	ask	write	-	-
+container-registry tag view	ask	write	-	-
+dependency-firewall	deny	outside	-	-
+deploy-key add	ask	send	-	-
+deploy-key delete	ask	write	-	-
+deploy-key get	ask	write	-	-
+deploy-key list	ask	write	-	-
+deploy-token create	deny	token	-	-
+deploy-token delete	ask	write	-	-
+deploy-token get	ask	write	-	-
+deploy-token list	ask	write	-	-
+duo	deny	outside	-	-
+govern	deny	outside	-	-
+gpg-key add	ask	send	-	-
+gpg-key delete	ask	write	-	-
+gpg-key get	ask	write	-	-
+gpg-key list	ask	write	-	-
+incident close	ask	write	-	-
+incident list	ask	write	-	-
+incident note	ask	write	-	-m
+incident reopen	ask	write	-	-
+incident subscribe	ask	write	-	-
+incident unsubscribe	ask	write	-	-
+incident view	ask	write	-	-
+issue board create	ask	write	-	-
+issue board view	ask	screen	-	-
+issue close	ask	write	-	-
+issue create	ask	write	-	-
+issue delete	ask	write	-	-
+issue list	allow	read	-	-
+issue note	ask	write	-	-m
+issue reopen	ask	write	-	-
+issue subscribe	ask	write	-	-
+issue unsubscribe	ask	write	-	-
+issue update	ask	write	-	-
+issue view	allow	read	-	-
+iteration list	ask	write	-	-
+job artifact	ask	local	-	-
+label create	ask	write	-	-
+label delete	ask	write	-	-
+label edit	ask	write	-	-
+label get	ask	write	-	-
+label list	allow	read	-	-
+milestone create	ask	write	-	-
+milestone delete	ask	write	-	-
+milestone edit	ask	write	-	-
+milestone get	ask	write	-	-
+milestone list	ask	write	-	-
+minder	deny	outside	-	-
+minder audit sync	deny	upload	-	-
+mr approve	ask	write	-	number
+mr approvers	ask	write	-	-
+mr checkout	ask	checkout	-	-
+mr close	ask	write	-	number
+mr create	ask	write	-f	--source-branch
+mr delete	ask	write	-	-
+mr diff	allow	read	-	-
+mr for	ask	write	-	-
+mr issues	ask	write	-	-
+mr list	allow	read	-	-
+mr merge	ask	write	-	number
+mr note	ask	write	-	-m
+mr note create	ask	write	-	-m
+mr note delete	ask	write	-	-
+mr note draft create	ask	write	-	-m
+mr note draft delete	ask	write	-	-
+mr note draft list	ask	write	-	-
+mr note draft publish	ask	write	-	-
+mr note draft update	ask	write	-	-m
+mr note list	ask	write	-	-
+mr note reopen	ask	write	-	-
+mr note resolve	ask	write	-	-
+mr note update	ask	write	-	-m
+mr rebase	ask	write	-	-
+mr reopen	ask	write	-	-
+mr revoke	ask	write	-	-
+mr subscribe	ask	write	-	-
+mr todo	ask	write	-	-
+mr unsubscribe	ask	write	-	-
+mr update	ask	write	-f	number
+mr view	allow	read	-	-
+opentofu init	deny	outside	-	-
+opentofu state delete	ask	write	-	-
+opentofu state download	deny	token	-	-
+opentofu state list	ask	write	-	-
+opentofu state lock	ask	write	-	-
+opentofu state unlock	ask	write	-	-
+orbit	deny	outside	-	-
+packages delete	ask	write	-	-
+packages download	ask	local	-	-
+packages list	ask	write	-	-
+packages upload	ask	send	-	-
+release create	ask	send	-	-
+release delete	ask	write	-	-
+release download	ask	local	-	-
+release list	allow	read	-	-
+release upload	ask	send	-	-
+release view	allow	read	-	-
+repo archive	ask	local	-	-
+repo clone	deny	clone	-	-
+repo contributors	ask	write	-	-
+repo create	ask	write	-	-
+repo delete	ask	write	-	-
+repo fork	deny	clone	-	-
+repo list	ask	write	-	-
+repo members add	ask	write	-	-
+repo members remove	ask	write	-	-
+repo mirror	ask	write	-	-
+repo prune	ask	local	-	-
+repo publish catalog	ask	write	-	-
+repo remote add	ask	local	-	-
+repo search	ask	write	-	-
+repo transfer	ask	write	-	-
+repo update	ask	write	-	-
+repo view	deny	repo-view	-	-
+runner assign	ask	write	-	-
+runner delete	ask	write	-	-
+runner jobs	ask	write	-	-
+runner list	ask	write	-	-
+runner managers	ask	write	-	-
+runner unassign	ask	write	-	-
+runner update	ask	write	-	-
+runner-controller create	ask	write	-	-
+runner-controller delete	ask	write	-	-
+runner-controller get	ask	write	-	-
+runner-controller list	ask	write	-	-
+runner-controller scope create	ask	write	-	-
+runner-controller scope delete	ask	write	-	-
+runner-controller scope list	ask	write	-	-
+runner-controller token create	deny	token	-	-
+runner-controller token list	ask	write	-	-
+runner-controller token revoke	ask	write	-	-
+runner-controller token rotate	deny	token	-	-
+runner-controller update	ask	write	-	-
+schedule create	ask	write	-	-
+schedule delete	ask	write	-	-
+schedule list	ask	write	-	-
+schedule run	ask	write	-	-
+schedule update	ask	write	-	-
+search semantic	ask	write	-	-
+securefile create	ask	send	-	-
+securefile download	deny	token	-	-
+securefile get	ask	write	-	-
+securefile list	ask	write	-	-
+securefile remove	ask	write	-	-
+securefile update	ask	send	-	-
+security config disable	ask	write	-	-
+security config enable	ask	write	-	-
+security config status	ask	write	-	-
+service-account create	ask	write	-	-
+service-account delete	ask	write	-	-
+service-account get	ask	write	-	-
+service-account list	ask	write	-	-
+service-account token create	deny	token	-	-
+service-account token list	ask	write	-	-
+service-account token revoke	ask	write	-	-
+service-account token rotate	deny	token	-	-
+service-account update	ask	write	-	-
+skills get	ask	write	-	-
+skills install	deny	outside	-	-
+skills list	ask	write	-	-
+skills update	deny	outside	-	-
+snippet create	ask	send	-	-
+ssh-key add	ask	send	-	-
+ssh-key delete	ask	write	-	-
+ssh-key get	ask	write	-	-
+ssh-key list	ask	write	-	-
+stack amend	ask	local	-	-
+stack create	ask	local	-	-
+stack delete	ask	local	-	-
+stack first	ask	local	-	-
+stack infer	ask	local	-	-
+stack last	ask	local	-	-
+stack list	ask	write	-	-
+stack move	ask	local	-	-
+stack next	ask	local	-	-
+stack prev	ask	local	-	-
+stack reorder	ask	local	-	-
+stack save	ask	local	-	-
+stack switch	ask	local	-	-
+stack sync	deny	push	-	-
+timelog list	ask	write	-	-
+todo done	ask	write	-	-
+todo list	ask	write	-	-
+token	deny	token	-	-
+user events	ask	write	-	-
+variable	deny	token	-	-
+version	allow	bare	-	-
+whatsnew	ask	write	-	-
+work-items create	ask	write	-	-
+work-items delete	ask	write	-	-
+work-items list	ask	write	-	-
+work-items update	ask	write	-	-

@@ -1,0 +1,20 @@
+# print-tree-entry.shのケースの一覧。列は、説明の文、リポジトリのオブジェクトの形式（sha1、sha256）、偽装の形、渡すcommit、渡すパス、期待する結果である。
+# リポジトリには、ブランチaとbのcommitがある。どちらも.github/workflows/ci.ymlと.gitlab-ci.ymlを持ち、ci.ymlの中身だけが違う。偽装は、graftのほかは、aのcommitをbのように見せる。graftは、aの親だけを変え、aのtreeを変えない。
+# 偽装の形は、-（無し）、replace（refs/replace/）、graft（.git/info/graftsで、aの親をbにする）、commit-graph（commit-graphのファイルのaのtreeをbのtreeに書き換える）、loose-tree（aのtreeのloose objectのファイルをbのものにする）、loose-commit（aのcommitのloose objectのファイルをbのものにする）である。
+# 渡すcommitは、aかbのSHA、missing（無いcommitのSHA）、bad（SHAの形でない文字列）である。結果は、「<mode> @ID@」（@ID@は、偽装の前にgitが求めた、aかbのそのパスのSHA）、なし（何も出さずに0）、失敗（1）である。
+ファイルのパスを渡すと、modeとblobのSHAを出す。	sha1	-	a	.github/workflows/ci.yml	100644 @ID@
+最後に/のあるフォルダーのパスを渡すと、modeとtreeのSHAを出す。	sha1	-	a	.github/workflows/	40000 @ID@
+一番上のファイルのパスを渡すと、modeとblobのSHAを出す。	sha1	-	b	.gitlab-ci.yml	100644 @ID@
+無いフォルダーのパスを渡すと、何も出さずに0で終わる。	sha1	-	a	.github/actions/	なし
+途中がファイルのパスを渡すと、何も出さずに0で終わる。	sha1	-	a	.gitlab-ci.yml/x	なし
+SHA-256のリポジトリでも、modeとblobのSHAを出す。	sha256	-	a	.github/workflows/ci.yml	100644 @ID@
+..を含むパスを渡すと、1で終わる。	sha1	-	a	.github/../.gitlab-ci.yml	失敗
+/で始まるパスを渡すと、1で終わる。	sha1	-	a	/.gitlab-ci.yml	失敗
+空の区切りを含むパスを渡すと、1で終わる。	sha1	-	a	.github//workflows/ci.yml	失敗
+手元に無いcommitを渡すと、1で終わる。	sha1	-	missing	.gitlab-ci.yml	失敗
+SHAの形でないcommitを渡すと、1で終わる。	sha1	-	bad	.gitlab-ci.yml	失敗
+refs/replace/で置き換えたcommitを渡しても、置き換える前のcommitの、そのパスのmodeとSHAを出す。	sha1	replace	a	.github/workflows/ci.yml	100644 @ID@
+info/graftsでaの親を変えても、失敗せずに、aのcommitの、そのパスのmodeとSHAを出す。	sha1	graft	a	.github/workflows/ci.yml	100644 @ID@
+commit-graphのtreeを書き換えても、commitの中身のtreeの、そのパスのmodeとSHAを出す。	sha1	commit-graph	a	.github/workflows/ci.yml	100644 @ID@
+treeのloose objectのファイルを偽ると、1で終わる。	sha1	loose-tree	a	.github/workflows/ci.yml	失敗
+commitのloose objectのファイルを偽ると、1で終わる。	sha1	loose-commit	a	.github/workflows/ci.yml	失敗

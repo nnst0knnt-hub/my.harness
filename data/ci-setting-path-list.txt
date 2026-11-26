@@ -1,0 +1,5 @@
+# CIの設定のファイルの場所の既定の一覧。1行に1つ、リポジトリの一番上からのパスで書き、/で終わるものはフォルダーの中のすべてを指す。
+# 送るcommitで、ここの場所のmodeとSHAがリモートの今の先頭と違えば、判定のスクリプトが確認を求める。導入先は.harness/configのprotection.ciSettingPathで足せるが、ここにあるものは外せない。理由は、.harness/docs/features/protection.mdの節「CIの設定のファイルを変えるpush」に書く。
+.github/workflows/
+.github/actions/
+.gitlab-ci.yml

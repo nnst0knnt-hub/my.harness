@@ -1,0 +1,8 @@
+# 保護するブランチの既定の一覧。1行に1つ、シェルのパターン（例：release*）で書き、ブランチの名前全体と比べる。
+# 導入先は.harness/configで足せるが、ここにあるものは外せない。理由は、.harness/docs/features/protection.mdの節「判定のスクリプト」に書く。
+main
+master
+develop
+staging
+production
+release*

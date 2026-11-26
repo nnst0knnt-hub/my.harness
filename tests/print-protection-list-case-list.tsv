@@ -1,0 +1,13 @@
+# print-protection-list.shのケースの一覧。列は、説明の文、導入先の.harness/configの中身、一覧のキー、期待する終了コード、期待する一覧である。
+# 中身はprintfの%bの形で書き、「-」は.harness/configを置かない、「!」は読めないファイル、「@」は文字デバイスの/dev/nullを指すシンボリックリンクにする。一覧は、出した行を空白でつないだもので、「-」は何も出さないことを表す。
+.harness/configが無いと、既定の保護するブランチの一覧だけを出す。	-	branch	0	main master develop staging production release*
+.harness/configで足したブランチを、既定の一覧のあとに出す。	[protection]\n\tbranch = hotfix/*\n\tbranch = qa\n	branch	0	main master develop staging production release* hotfix/* qa
+.harness/configにほかのキーだけがあると、既定の一覧だけを出す。	[other]\n\tkey = value\n	branch	0	main master develop staging production release*
+空の.harness/configなら、既定の一覧だけを出す。	\n	branch	0	main master develop staging production release*
+.harness/configの形が壊れていると、何も出さずに失敗する。	[protection\n	branch	1	-
+.harness/configが読めないと、何も出さずに失敗する。	!	branch	1	-
+.harness/configが文字デバイスなら、ふつうのファイルでないので、何も出さずに失敗する。	@	branch	1	-
+.harness/configが無いと、既定のCIの設定のファイルの場所だけを出す。	-	ciSettingPath	0	.github/workflows/ .github/actions/ .gitlab-ci.yml
+.harness/configで足したCIの設定のファイルの場所を、既定の一覧のあとに出す。	[protection]\n\tciSettingPath = build/ci.sh\n\tbranch = qa\n	ciSettingPath	0	.github/workflows/ .github/actions/ .gitlab-ci.yml build/ci.sh
+CIの設定のファイルの場所を足しても、保護するブランチの一覧には出さない。	[protection]\n\tciSettingPath = build/ci.sh\n	branch	0	main master develop staging production release*
+.harness/configの形が壊れていると、CIの設定のファイルの場所も出さずに失敗する。	[protection\n	ciSettingPath	1	-

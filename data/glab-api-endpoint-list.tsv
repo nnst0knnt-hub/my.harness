@@ -1,0 +1,23 @@
+# glab apiのエンドポイントの一覧。scripts/classify-glab-api-command.shが、?より前を形と、?の後ろを&で分けて引数と比べる。allowの行に合えば確認なしで通し、denyの行に合えば止め、どちらにも合わなければ確認を求める。
+# 列は、種類、エンドポイントの形、許す問い合わせの引数（空白で区切った「名前=値のERE」、「-」は無い）である。denyの行は、トークンか秘密の値を返すことがある形で、引数の列を使わない。
+# 形の<P>は[A-Za-z0-9_.-]+を%2Fでつないだプロジェクトのパス（2つ以上）、<G>は/を含まない1つの区切り、<N>は数字、<D>は40桁の16進である。deny-segmentの行は、その名前の区切りがどこかにあれば止める。
+allow	user	-
+allow	projects/<P>/merge_requests/<N>	-
+allow	projects/<P>/merge_requests/<N>/discussions	page=[0-9]+ per_page=([1-9]|[1-9][0-9]|100)
+allow	projects/<P>/merge_requests/<N>/discussions/<D>	-
+allow	projects/<P>/merge_requests/<N>/notes	page=[0-9]+ per_page=([1-9]|[1-9][0-9]|100) sort=(asc|desc) order_by=(created_at|updated_at)
+allow	projects/<P>/merge_requests/<N>/notes/<N>	-
+allow	projects/<P>/merge_requests/<N>/versions	page=[0-9]+ per_page=([1-9]|[1-9][0-9]|100)
+allow	projects/<P>/merge_requests/<N>/versions/<N>	unidiff=(true|false)
+allow	projects/<P>/merge_requests/<N>/pipelines	page=[0-9]+ per_page=([1-9]|[1-9][0-9]|100)
+allow	projects/<P>/merge_requests/<N>/draft_notes	page=[0-9]+ per_page=([1-9]|[1-9][0-9]|100)
+allow	projects/<P>/merge_requests/<N>/draft_notes/<N>	-
+allow	projects/<P>/pipelines/<N>/jobs	page=[0-9]+ per_page=([1-9]|[1-9][0-9]|100) scope=(created|pending|running|failed|success|canceled|skipped|waiting_for_resource|manual) include_retried=(true|false)
+allow	projects/<P>/protected_branches	page=[0-9]+ per_page=([1-9]|[1-9][0-9]|100) search=[A-Za-z0-9_.-]+
+deny	projects/<G>	-
+deny	groups/<G>	-
+deny-segment	variables	-
+deny-segment	triggers	-
+deny-segment	deploy_tokens	-
+deny-segment	access_tokens	-
+deny-segment	secure_files	-

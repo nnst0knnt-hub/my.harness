@@ -1,0 +1,9 @@
+# print-command-without-trailing-redirect.shのケースの一覧。列は、説明の文、渡すコマンドの文字列、期待する出力である。
+# 文字列と出力はprintfの%bの形で書く（\nは改行、\tはタブ）。「=」は、渡した文字列をそのまま出すことを表す。
+末尾に2>&1が無ければ、そのまま出す。	glab mr list	=
+末尾の、空白で分かれた2>&1を外す。	git fetch origin main 2>&1	git fetch origin main
+2>&1の前と後ろの空白とタブも外す。	git fetch origin main \t 2>&1 \t	git fetch origin main
+本文の途中の行末の2>&1は、外さない。	glab mr note create 1 -m 'a 2>&1\nb'	=
+本文の途中の行末と全体の最後の両方にあれば、最後だけを外す。	glab mr note create 1 -m 'a 2>&1\nb' 2>&1	glab mr note create 1 -m 'a 2>&1\nb'
+前の語とつながった2>&1は、外さない。	git fetch origin main2>&1	=
+最後の2>&1のあとに改行があっても、外す。	git fetch origin main 2>&1\n	git fetch origin main

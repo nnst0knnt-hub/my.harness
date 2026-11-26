@@ -1,0 +1,19 @@
+# find-nonempty-glab-setting.shのケースの一覧。列は、説明の文、ケースのフォルダーで動かすコマンド（「-」は何もしない）、渡すパス（空白で区切る）、期待する結果（終了コードと、出したパス）である。
+# パスと結果の@CASE@は、ケースのフォルダーに置き換える。
+# 設定とみなさないもの
+無いパスを渡すと、見つけない。	-	@CASE@/glab-cli	1
+空のフォルダーを渡すと、見つけない。	mkdir glab-cli	@CASE@/glab-cli	1
+空のファイルを渡すと、見つけない。	: > glab-cli	@CASE@/glab-cli	1
+文字デバイスの/dev/nullを渡すと、見つけない。	-	/dev/null	1
+# 設定とみなすもの
+config.ymlのあるフォルダーを渡すと、見つける。	mkdir glab-cli && : > glab-cli/config.yml	@CASE@/glab-cli	0 @CASE@/glab-cli
+隠したファイルだけがあるフォルダーを渡すと、見つける。	mkdir glab-cli && : > glab-cli/.x	@CASE@/glab-cli	0 @CASE@/glab-cli
+空のフォルダーだけがあるフォルダーを渡すと、見つける。	mkdir -p glab-cli/sub	@CASE@/glab-cli	0 @CASE@/glab-cli
+中を読めないフォルダーを渡すと、見つける。	mkdir glab-cli && chmod 000 glab-cli	@CASE@/glab-cli	0 @CASE@/glab-cli
+空でないファイルを渡すと、見つける。	printf x > glab-cli	@CASE@/glab-cli	0 @CASE@/glab-cli
+先の無いシンボリックリンクを渡すと、見つける。	ln -s outside glab-cli	@CASE@/glab-cli	0 @CASE@/glab-cli
+空のフォルダーへのシンボリックリンクを渡すと、見つける。	mkdir outside && ln -s outside glab-cli	@CASE@/glab-cli	0 @CASE@/glab-cli
+FIFOを渡すと、見つける。	mkfifo glab-cli	@CASE@/glab-cli	0 @CASE@/glab-cli
+# 複数のパス
+空のものと中身のあるものを渡すと、中身のある最初のパスを出す。	mkdir a b c && : > b/config.yml && : > c/config.yml	@CASE@/a @CASE@/b @CASE@/c	0 @CASE@/b
+どれも空なら、見つけない。	mkdir a b	@CASE@/a @CASE@/b @CASE@/missing	1

@@ -1,0 +1,17 @@
+# print-remote-head.shのケースの一覧。列は、説明の文、リモートの形、動かすgit、渡すリモート、上限の秒数、渡すブランチ（「,」区切り、「-」は渡さない）、期待する結果である。
+# 導入先は、隣の手元のbareのリポジトリをoriginにしたリポジトリで、originのmainは最初のcommit、originのfeat/xは次のcommitを指す。
+# リモートの形は、-（そのまま）、pushurl（originのpushurlを、mainが次のcommitを指す別のbareのリポジトリにする）、missing（originのurlを無い場所にする）、tail-ref（originに、次のcommitを指すrefs/tags/HEADとrefs/tags/feat/newを足す）、ext（protocol.ext.allowを許し、originのurlを、markerを作るext::のURLにする）、insteadof-ext（pushInsteadOfではもとの場所のまま、insteadOfでmarkerを作るext::のURLに書き換わる形にする）、http（originのurlをhttp://のURLにする）である。動かすgitは、ふつうか、遅い（ls-remoteだけ、答えずに5秒待って終わる）である。
+# 結果は、出した行を「;」でつなぎ、mainのcommitのSHAを@main@、次のcommitのSHAを@next@にしたものと、終了コードである。URLのコマンドが動いてmarkerができたら、「marker=yes」を足す。
+送り先のブランチがあると、HEADと送り先のブランチのSHAを出す。	-	ふつう	origin	10	feat/x	@main@ HEAD;@next@ refs/heads/feat/x 0
+リモートに無い送り先のブランチは、出さない。	-	ふつう	origin	10	feat/new	@main@ HEAD 0
+ブランチを渡さないと、HEADだけを出す。	-	ふつう	origin	10	-	@main@ HEAD 0
+送り先のブランチを2つ渡すと、どちらも出す。	-	ふつう	origin	10	feat/x,main	@main@ HEAD;@next@ refs/heads/feat/x;@main@ refs/heads/main 0
+名前の後ろがHEADか送り先と合うだけの参照は、出さない。	tail-ref	ふつう	origin	10	feat/new	@main@ HEAD 0
+pushurlがあると、pushurlの場所に問い合わせる。	pushurl	ふつう	origin	10	-	@next@ HEAD 0
+問い合わせに失敗すると、何も出さずに1で終わる。	missing	ふつう	origin	10	-	なし 1
+ext::のURLは、protocol.ext.allowを許していても問い合わせず、URLのコマンドを動かさずに1で終わる。	ext	ふつう	origin	10	-	なし 1
+pushInsteadOfのあとの場所がinsteadOfでext::に書き換わると、問い合わせず、URLのコマンドを動かさずに1で終わる。	insteadof-ext	ふつう	origin	10	-	なし 1
+http://のURLは、問い合わせずに1で終わる。	http	ふつう	origin	10	-	なし 1
+gitの設定に無いリモートを渡すと、何も出さずに1で終わる。	-	ふつう	fork	10	-	なし 1
+上限の秒数を超えると、待たずに、何も出さずに1で終わる。	-	遅い	origin	1	-	なし 1
+上限の秒数が数でないと、使い方の誤りで止める。	-	ふつう	origin	x	-	なし 2
