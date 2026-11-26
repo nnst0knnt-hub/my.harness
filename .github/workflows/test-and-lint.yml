@@ -1,0 +1,51 @@
+# bash 3.2はmacOSのランナーの/bin/bashで、新しいbashはUbuntuのランナーで動かす。
+# 理由は、判断の記録0019（docs/decisions/0019-old-bash-ci-runner.md）に書く。
+name: テストと静的解析
+
+# pull_requestは足さない。PRのブランチへの1回のpushで、pushしたcommitと、PRのマージを試すcommit（refs/pull/<番号>/merge）に1回ずつ、2回動くためである。
+on: push
+
+permissions:
+  contents: read
+
+# 同じブランチの古い実行を止め、使う時間を減らす。
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-on-new-bash:
+    name: 新しいbashでのテストと静的解析
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: リポジトリをチェックアウトする
+        # actions/checkout v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: bash、git、ShellCheckのバージョンを表示する
+        run: |
+          bash --version
+          git --version
+          shellcheck --version
+      - name: テストと静的解析を動かす
+        run: bash tests/run-test-suite.sh
+
+  test-on-bash-3-2:
+    name: bash 3.2でのテストと静的解析
+    runs-on: macos-15
+    # macOSのランナーはUbuntuのランナーより遅く、テストの途中で5分を超えたので、15分にする。
+    timeout-minutes: 15
+    steps:
+      - name: リポジトリをチェックアウトする
+        # actions/checkout v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: bashとgitのバージョンを表示する
+        run: |
+          /bin/bash --version
+          git --version
+      - name: テストと静的解析を動かす
+        run: /bin/bash tests/run-test-suite.sh

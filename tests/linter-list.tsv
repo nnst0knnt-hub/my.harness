@@ -1,0 +1,19 @@
+# tests/run-test-suite.shが当てるlinterの一覧。列は、確認の名前、linterのパス、git ls-filesのパターンである。
+# パターンは空白で区切り、「:!」で始まるものは除くパターンにする。
+共通のルールの字数	scripts/find-long-rule.sh	rules/always-read.md
+スクリプトの行数	linters/find-long-script.sh	*.sh
+コメント	linters/find-missing-comment.sh	*.sh
+実行の権限	linters/find-non-executable-script.sh	*.sh
+整形	linters/find-format-error.sh	*
+# 確認から除くファイルと理由は、CONTRIBUTING.mdの節「機械で確かめるもの」に書く。
+機械で止める語	scripts/find-banned-word.sh	* :!data/banned-word-list.txt :!data/ambiguous-word-list.txt :!tests/find-banned-word-case-list.tsv
+表記の文の中	scripts/find-notation-error.sh	*.md
+表記の見出しとコードブロック	scripts/find-markdown-block-error.sh	*.md
+表記の箇条書きと表	scripts/find-list-and-table-error.sh	*.md
+表のセルの文の数	scripts/find-long-table-cell.sh	*.md
+表記の文のあとの語句	scripts/find-phrase-after-sentence.sh	*.md
+名前のバッククォート	linters/find-missing-backquote.sh	*.md
+1台のPCの具体と推測の形	linters/find-unverified-or-pc-specific-word.sh	*.md :!.harness/docs/changes/*
+相対リンク	linters/find-broken-link.sh	*.md
+判断の記録	linters/find-decision-error.sh	docs/decisions/*.md
+出典の形	linters/find-source-format-error.sh	*.md
