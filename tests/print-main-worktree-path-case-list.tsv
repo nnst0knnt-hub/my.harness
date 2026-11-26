@@ -1,0 +1,12 @@
+# print-main-worktree-path.shのケースの一覧。列は、説明の文、動かす場所（tests/create-case-repository.shのcreate_case_repositoryの場所）、期待する結果である。
+# 結果は、終了コードと、出したパスの種類（projectは導入先のフォルダー、なしは何も出さない）である。
+リポジトリの一番上で動かすと、そのフォルダーを出す。	git	0 project
+リポジトリのサブフォルダーで動かすと、一番上のフォルダーを出す。	subfolder	0 project
+worktreeで動かすと、メインの作業フォルダーを出す。	worktree	0 project
+.gitを外に置いたリポジトリで動かすと、作業フォルダーを出す。	separate	0 project
+.gitを外に置いたリポジトリのworktreeで動かすと、求められずに何も出さない。	separate-worktree	1 なし
+サブモジュールの中で動かすと、サブモジュールの作業フォルダーを出す。	submodule	0 project
+bareのリポジトリで動かすと、求められずに何も出さない。	bare	1 なし
+.gitという名前のbareのリポジトリのworktreeで動かすと、求められずに何も出さない。	bare-dot-git-worktree	1 なし
+gitの外で動かすと、求められずに何も出さない。	外	1 なし
+無いフォルダーを渡すと、求められずに何も出さない。	無い	1 なし

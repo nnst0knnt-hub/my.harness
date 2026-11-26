@@ -1,0 +1,31 @@
+# print-project-common-directory.shのケースの一覧。列は、説明の文、場所（tests/create-case-repository.shのcreate_case_repositoryの場所）、設定のコマンド、CLAUDE_PROJECT_DIRのパス、前に付ける環境変数、期待する結果である。
+# 設定のコマンドは、動かす場所で、HOMEをケースのフォルダーにして動かす。「-」は何もしないことを表す。偽のリポジトリは、作業フォルダーの外のケースのフォルダーに作る。
+# CLAUDE_PROJECT_DIRのパスは、ケースのフォルダーからのパスをprintfの%bの形で書き、「-」は動かす場所を表す。環境変数の@ROOT@と結果の@ROOT@は、ケースのフォルダーを表す。
+# 結果は、終了コードと、出した共通のgitのフォルダーである。
+# 導入先のリポジトリとみなすもの
+メインの作業フォルダーを渡すと、その.gitを出す。	git	-	-	-	0 @ROOT@/project/.git
+メインの作業フォルダーの下のフォルダーを渡すと、メインの作業フォルダーの.gitを出す。	subfolder	-	-	-	0 @ROOT@/project/.git
+Claude Codeの既定の場所のworktreeを渡すと、メインの作業フォルダーの.gitを出す。	claude-worktree	-	-	-	0 @ROOT@/project/.git
+worktreeの下のフォルダーを渡すと、メインの作業フォルダーの.gitを出す。	claude-worktree	mkdir src	project/.claude/worktrees/x/src	-	0 @ROOT@/project/.git
+worktreeの中で作ったworktreeを渡すと、最初の.claude/worktrees/より前をメインの作業フォルダーとして、その.gitを出す。	claude-worktree	git worktree add -q .claude/worktrees/y	project/.claude/worktrees/x/.claude/worktrees/y	-	0 @ROOT@/project/.git
+リンクを通したworktreeのパスを渡すと、たどった先のパスで比べて、メインの作業フォルダーの.gitを出す。	claude-worktree	ln -s "$HOME/project" "$HOME/link"	link/.claude/worktrees/x	-	0 @ROOT@/project/.git
+名前の無い.claude/worktreesそのものを渡すと、メインの作業フォルダーの下のフォルダーとして、その.gitを出す。	claude-worktree	-	project/.claude/worktrees	-	0 @ROOT@/project/.git
+環境に偽のリポジトリのGIT_DIR、GIT_COMMON_DIR、GIT_WORK_TREEがあっても、それに引かれずにメインの作業フォルダーの.gitを出す。	claude-worktree	git init -q "$HOME/forged"	-	GIT_DIR=@ROOT@/forged/.git GIT_COMMON_DIR=@ROOT@/forged/.git GIT_WORK_TREE=@ROOT@/forged	0 @ROOT@/project/.git
+# .gitを書き換えたworktree
+.gitのファイルを作業フォルダーの外の偽のリポジトリのworktrees/xに向けたworktreeを渡すと、何も出さずに1で終わる。	claude-worktree	git init -q "$HOME/forged" && git -C "$HOME/forged" -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m x && mkdir -p "$HOME/forged/.git/worktrees/x" && git -C "$HOME/forged" rev-parse HEAD > "$HOME/forged/.git/worktrees/x/HEAD" && printf '../..\n' > "$HOME/forged/.git/worktrees/x/commondir" && printf '%s/.git\n' "$(pwd -P)" > "$HOME/forged/.git/worktrees/x/gitdir" && printf 'gitdir: %s/forged/.git/worktrees/x\n' "$HOME" > .git	-	-	1
+.gitのファイルを、偽のcore.worktreeを書いたworktreeでない偽のgitのフォルダーに向けたworktreeを渡すと、1で終わる。	claude-worktree	git init -q "$HOME/forged" && git -C "$HOME/forged" config core.worktree "$HOME/forged" && printf 'gitdir: %s/forged/.git\n' "$HOME" > .git	-	-	1
+.gitのファイルを消し、上のフォルダーに偽の.gitを作ったworktreeを渡すと、1で終わる。	claude-worktree	rm .git && git init -q ..	-	-	1
+.gitのファイルを消しただけのworktreeを渡すと、メインの作業フォルダーの.gitを使うがworktreeの形でないので、1で終わる。	claude-worktree	rm .git	-	-	1
+.gitのファイルを偽の.gitのフォルダーに置き換えたworktreeを渡すと、1で終わる。	claude-worktree	rm .git && git init -q .	-	-	1
+メインの.gitのworktrees/xのcommondirを偽のリポジトリに書き換えたworktreeを渡すと、1で終わる。	claude-worktree	git init -q "$HOME/forged" && printf '%s/forged/.git\n' "$HOME" > "$(git rev-parse --git-dir)/commondir"	-	-	1
+メインの.gitがリンクのリポジトリのworktreeを渡すと、1で終わる。	claude-worktree	mv ../../../.git "$HOME/real-git" && ln -s "$HOME/real-git" ../../../.git	-	-	1
+# Claude Codeの既定の場所の外のworktreeとほかの形
+projectの隣に作ったworktreeを渡すと、1で終わる。	worktree	-	-	-	1
+projectの隣のworktreeの.gitを、偽のcore.worktreeで一番上を移した偽のgitのフォルダーに向けると、CLAUDE_PROJECT_DIRが一番上の外になるので、1で終わる。	worktree	git init -q "$HOME/forged" && git -C "$HOME/forged" config core.worktree "$HOME/forged" && printf 'gitdir: %s/forged/.git\n' "$HOME" > .git	-	-	1
+メインの作業フォルダーの中の、.claude/worktrees/の外に作ったworktreeを渡すと、1で終わる。	git	git worktree add -q wt	project/wt	-	1
+bareのリポジトリの.gitの隣に作ったworktreeを渡すと、1で終わる。	bare-dot-git-worktree	-	-	-	1
+.gitを外に置いたリポジトリを渡すと、1で終わる。	separate	-	-	-	1
+.gitがリンクのリポジトリを渡すと、1で終わる。	git	mv .git "$HOME/real-git" && ln -s "$HOME/real-git" .git	-	-	1
+gitの外の.claude/worktrees/xを渡すと、1で終わる。	外	mkdir -p .claude/worktrees/x	project/.claude/worktrees/x	-	1
+無いフォルダーを渡すと、1で終わる。	無い	-	-	-	1
+改行を含むパスを渡すと、求めずに1で終わる。	git	mkdir "$(printf 'a\nb')"	project/a\nb	-	1

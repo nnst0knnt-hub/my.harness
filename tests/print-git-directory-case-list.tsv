@@ -1,0 +1,21 @@
+# print-git-directory.shのケースの一覧。列は、説明の文、動かす場所（tests/create-case-repository.shのcreate_case_repositoryの場所）、動かす前に動かす設定のコマンド、スクリプトを動かすフォルダー、期待する結果である。
+# 設定のコマンドは、動かす場所で、HOMEをケースのフォルダーにして動かす。「-」は何もしないことを表す。
+# スクリプトを動かすフォルダーは、動かす場所からの相対パスをprintfの%bの形で書き、「-」は動かす場所そのものを表す。
+# 結果は、終了コードと、出した3行を「|」でつないだもので、ケースのフォルダーのパスを@CASE@に置き換える。何も出さないときは、終了コードだけにする。
+メインの作業フォルダーで動かすと、.gitを2回と作業フォルダーの一番上を出す。	git	-	-	0 @CASE@/project/.git|@CASE@/project/.git|@CASE@/project
+下のフォルダーで動かしても、一番上の場所を出す。	subfolder	-	-	0 @CASE@/project/.git|@CASE@/project/.git|@CASE@/project
+worktreeで動かすと、worktrees/の中のgitのフォルダーと、メインの.gitを出す。	worktree	-	-	0 @CASE@/project/.git/worktrees/worktree|@CASE@/project/.git|@CASE@/worktree
+.gitを別の場所に置いたリポジトリで動かすと、置いた場所を出す。	separate	-	-	0 @CASE@/store|@CASE@/store|@CASE@/project
+.gitを別の場所に置いたリポジトリのworktreeで動かすと、置いた場所のworktrees/の中を出す。	separate-worktree	-	-	0 @CASE@/store/worktrees/worktree|@CASE@/store|@CASE@/worktree
+サブモジュールで動かすと、親の.git/modules/の中を出す。	submodule	-	-	0 @CASE@/.git/modules/project|@CASE@/.git/modules/project|@CASE@/project
+.gitがbareのリポジトリのworktreeで動かすと、bareのリポジトリを共通のgitのフォルダーとして出す。	bare-dot-git-worktree	-	-	0 @CASE@/project/.git/worktrees/worktree|@CASE@/project/.git|@CASE@/worktree
+作業フォルダーの中の入れ子のリポジトリで動かすと、入れ子のリポジトリの場所を出す。	git	git init -q inner	inner	0 @CASE@/project/inner/.git|@CASE@/project/inner/.git|@CASE@/project/inner
+.gitのファイルがほかの場所を指すと、指す先をgitのフォルダーとして出す。	git	mv .git ../moved && printf 'gitdir: %s\n' "$(dirname "$PWD")/moved" > .git	-	0 @CASE@/moved|@CASE@/moved|@CASE@/project
+.git/commondirがほかの場所を指すと、指す先を共通のgitのフォルダーとして出す。	git	git init -q --bare ../other && printf '%s\n' "$(dirname "$PWD")/other" > .git/commondir	-	0 @CASE@/project/.git|@CASE@/other|@CASE@/project
+空白を含むパスのリポジトリで動かすと、空白を含むパスを出す。	git	git init -q 'a b'	a b	0 @CASE@/project/a b/.git|@CASE@/project/a b/.git|@CASE@/project/a b
+'を含むパスのリポジトリで動かすと、'を含むパスを出す。	git	git init -q "a'b"	a'b	0 @CASE@/project/a'b/.git|@CASE@/project/a'b/.git|@CASE@/project/a'b
+改行を含むパスのリポジトリで動かすと、何も出さずに1で終わる。	git	git init -q "$(printf 'a\nb')"	a\nb	1
+復帰を含むパスのリポジトリで動かすと、何も出さずに1で終わる。	git	git init -q "$(printf 'a\rb')"	a\rb	1
+bareのリポジトリで動かすと、作業フォルダーが無いので1で終わる。	bare	-	-	1
+gitの外で動かすと、1で終わる。	外	-	-	1
+無いフォルダーを渡すと、1で終わる。	無い	-	-	1
