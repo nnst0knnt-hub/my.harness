@@ -1,0 +1,105 @@
+{
+  "description": "セッションの始めに、ハーネスの場所、メインの作業フォルダー、常に読むルール、文書の目次を渡し、git push、git fetch、git pull、gh、glabを動かす前に、判定のスクリプトで通すか、確認を求めるか、止めるかを決める。外で動かすスクリプトを直接呼ぶ形と、Monitorのツールの、書き換えの要るgit push、git fetch、glabと確認を求めるghは止める",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/print-session-context.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(git push *)",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/read-bash-command.sh",
+            "timeout": 30,
+            "onFailure": "block"
+          },
+          {
+            "type": "command",
+            "if": "Bash(git fetch *)",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/read-bash-command.sh",
+            "timeout": 30,
+            "onFailure": "block"
+          },
+          {
+            "type": "command",
+            "if": "Bash(git pull *)",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/read-bash-command.sh",
+            "timeout": 30,
+            "onFailure": "block"
+          },
+          {
+            "type": "command",
+            "if": "Bash(gh *)",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/read-bash-command.sh",
+            "timeout": 30,
+            "onFailure": "block"
+          },
+          {
+            "type": "command",
+            "if": "Bash(glab *)",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/read-bash-command.sh",
+            "timeout": 30,
+            "onFailure": "block"
+          },
+          {
+            "type": "command",
+            "if": "Bash(bash *exec-with-pinned-git-directory.sh *)",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/read-bash-command.sh",
+            "timeout": 30,
+            "onFailure": "block"
+          }
+        ]
+      },
+      {
+        "matcher": "Monitor",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Monitor(git push *)",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/read-bash-command.sh",
+            "timeout": 30,
+            "onFailure": "block"
+          },
+          {
+            "type": "command",
+            "if": "Monitor(git fetch *)",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/read-bash-command.sh",
+            "timeout": 30,
+            "onFailure": "block"
+          },
+          {
+            "type": "command",
+            "if": "Monitor(gh *)",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/read-bash-command.sh",
+            "timeout": 30,
+            "onFailure": "block"
+          },
+          {
+            "type": "command",
+            "if": "Monitor(glab *)",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/read-bash-command.sh",
+            "timeout": 30,
+            "onFailure": "block"
+          },
+          {
+            "type": "command",
+            "if": "Monitor(bash *exec-with-pinned-git-directory.sh *)",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/read-bash-command.sh",
+            "timeout": 30,
+            "onFailure": "block"
+          }
+        ]
+      }
+    ]
+  }
+}

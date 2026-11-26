@@ -1,0 +1,53 @@
+# exec-with-pinned-git-directory.shのケースの一覧。列は、説明の文、動かす場所（tests/create-case-repository.shのcreate_case_repositoryの場所）、判定のあとに動かすコマンド、記録、前に付ける環境変数、記録の語、渡す名前、期待する結果、標準エラーに含むはずの語である。
+# 場所を作り、場所を求めて記録を書いたあとに、判定のあとに動かすコマンドを、動かす場所で、HOMEをケースのフォルダーにして動かす。「-」は何もしないことを表す。
+# 記録は、ありが記録と全文のファイルを書く、古いが同じく書いて記録の日時を2020年1月1日にする、無いが書かない、2回が同じ記録で2回動かした2回目である。
+# 記録の語は「|」で区切ってprintfの%bの形で書き、@GIT@、@COMMON@、@TOP@を、判定のときのgitのフォルダー、共通のgitのフォルダー、作業フォルダーの一番上に置き換える。渡す名前は「|」で区切り、@NAME@を書いた記録の名前に置き換え、「-」は名前を渡さないことを表す。
+# 結果は、終了コードと、偽のgit、gh、glabが出す1行（固定した3つの場所、GIT_NO_LAZY_FETCH、足した設定、引数）で、ケースのフォルダーを@CASE@に、改行を~に置き換える。記録か全文のファイルが残ったときは、「残った：記録」か「残った：全文のファイル」を後ろに足す。
+# 記録があれば、gitのフォルダーを固定して動かすもの
+記録のあるghの名前を渡すと、gitのフォルダーを固定して、記録の語を変えずに動かし、記録と全文のファイルを消す。	git	-	あり	-	@GIT@|@COMMON@|@TOP@|no-recurse|gh|pr|create|--body|a b	@NAME@	0 dir=@CASE@/project/.git|@CASE@/project/.git|@CASE@/project lazy=1 config=fetch.recurseSubmodules=false,push.recurseSubmodules=no,submodule.recurse=false args=[gh][pr][create][--body][a b]	-
+recurseの記録では、サブモジュールの設定を足さない。	git	-	あり	-	@GIT@|@COMMON@|@TOP@|recurse|git|fetch|origin|main	@NAME@	0 dir=@CASE@/project/.git|@CASE@/project/.git|@CASE@/project lazy=1 config= args=[git][fetch][origin][main]	-
+GIT_CONFIG_COUNTが今あるときは、その後ろにサブモジュールの設定を足す。	git	-	あり	GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=a.b GIT_CONFIG_VALUE_0=c	@GIT@|@COMMON@|@TOP@|no-recurse|git|push|origin|x:x	@NAME@	0 dir=@CASE@/project/.git|@CASE@/project/.git|@CASE@/project lazy=1 config=a.b=c,fetch.recurseSubmodules=false,push.recurseSubmodules=no,submodule.recurse=false args=[git][push][origin][x:x]	-
+改行を含む語も、変えずに渡す。	git	-	あり	-	@GIT@|@COMMON@|@TOP@|recurse|glab|mr|note|create|1|-m|a\nb	@NAME@	0 dir=@CASE@/project/.git|@CASE@/project/.git|@CASE@/project lazy=1 config= args=[glab][mr][note][create][1][-m][a~b]	-
+バッククォートと$(を含む語も、変えずに渡す。	git	-	あり	-	@GIT@|@COMMON@|@TOP@|recurse|glab|mr|note|create|1|-m|a `b` $(c)	@NAME@	0 dir=@CASE@/project/.git|@CASE@/project/.git|@CASE@/project lazy=1 config= args=[glab][mr][note][create][1][-m][a `b` $(c)]	-
+空の語も、変えずに渡す。	git	-	あり	-	@GIT@|@COMMON@|@TOP@|recurse|gh|pr|create|--body||--title|x	@NAME@	0 dir=@CASE@/project/.git|@CASE@/project/.git|@CASE@/project lazy=1 config= args=[gh][pr][create][--body][][--title][x]	-
+worktreeのcommondirが共通のgitのフォルダーを指していれば、動かす。	worktree	-	あり	-	@GIT@|@COMMON@|@TOP@|recurse|gh|pr|merge|1	@NAME@	0 dir=@CASE@/project/.git/worktrees/worktree|@CASE@/project/.git|@CASE@/worktree lazy=1 config= args=[gh][pr][merge][1]	-
+ghは、gitのフォルダーにconfig.ymlのあるglab-cliがあっても動かす。	git	mkdir .git/glab-cli && : > .git/glab-cli/config.yml	あり	-	@GIT@|@COMMON@|@TOP@|recurse|gh|pr|merge|1	@NAME@	0 dir=@CASE@/project/.git|@CASE@/project/.git|@CASE@/project lazy=1 config= args=[gh][pr][merge][1]	-
+# 記録が無いか使えないもの
+記録の無い名前を渡すと、動かさない。	git	-	無い	-	@GIT@|@COMMON@|@TOP@|recurse|gh|pr|merge|1	@NAME@	1	記録が無い
+日時が2020年の古い記録しか無いと、動かさずに、記録と全文のファイルを消す。	git	-	古い	-	@GIT@|@COMMON@|@TOP@|recurse|gh|pr|merge|1	@NAME@	1	分より古い
+同じ記録で2回動かすと、2回目は動かさない。	git	-	2回	-	@GIT@|@COMMON@|@TOP@|recurse|gh|pr|merge|1	@NAME@	1	記録が無い
+語が4つしか無い記録では、動かさずに2で終わる。	git	-	あり	-	@GIT@|@COMMON@|@TOP@|recurse	@NAME@	2	そろっていません
+# 名前の形の誤り
+パスの区切りを含む名前を渡すと、記録を読まずに2で終わる。	git	-	あり	-	@GIT@|@COMMON@|@TOP@|recurse|gh|pr|merge|1	../@NAME@	2 残った：記録 残った：全文のファイル	英数字
+全文のファイルの名前を渡すと、記録を読まずに2で終わる。	git	-	あり	-	@GIT@|@COMMON@|@TOP@|recurse|gh|pr|merge|1	@NAME@.txt	2 残った：記録 残った：全文のファイル	英数字
+名前を渡さないと、2で終わる。	git	-	あり	-	@GIT@|@COMMON@|@TOP@|recurse|gh|pr|merge|1	-	2 残った：記録 残った：全文のファイル	英数字
+名前を2つ渡すと、2で終わる。	git	-	あり	-	@GIT@|@COMMON@|@TOP@|recurse|gh|pr|merge|1	@NAME@|@NAME@	2 残った：記録 残った：全文のファイル	英数字
+# 判定のあとにgitのフォルダーを書き換えたもの
+メインの.gitにcommondirを作ると、動かさない。	git	git init -q --bare ../other && printf '%s\n' "$(dirname "$PWD")/other" > .git/commondir	あり	-	@GIT@|@COMMON@|@TOP@|recurse|git|push|origin|x:x	@NAME@	1	commondirがあります
+worktreeのcommondirをほかの場所に書き換えると、動かさない。	worktree	git init -q --bare ../other && printf '%s\n' "$(dirname "$PWD")/other" > "$(git rev-parse --git-dir)/commondir"	あり	-	@GIT@|@COMMON@|@TOP@|recurse|git|push|origin|x:x	@NAME@	1	を指していません
+worktreeのcommondirを消すと、動かさない。	worktree	rm "$(git rev-parse --git-dir)/commondir"	あり	-	@GIT@|@COMMON@|@TOP@|recurse|git|fetch|origin	@NAME@	1	を指していません
+refs/の下をリンクにすると、動かさない。	git	mkdir ../outside && mkdir -p .git/refs/remotes && rmdir .git/refs/remotes && ln -s "$(dirname "$PWD")/outside" .git/refs/remotes	あり	-	@GIT@|@COMMON@|@TOP@|recurse|git|fetch|origin	@NAME@	1	シンボリックリンク
+logs/の下をリンクにすると、動かさない。	git	mkdir ../outside && mkdir -p .git/logs/refs && ln -s "$(dirname "$PWD")/outside" .git/logs/refs/remotes	あり	-	@GIT@|@COMMON@|@TOP@|recurse|git|fetch|origin	@NAME@	1	シンボリックリンク
+packed-refsをリンクにすると、動かさない。	git	: > ../outside-packed && rm -f .git/packed-refs && ln -s "$(dirname "$PWD")/outside-packed" .git/packed-refs	あり	-	@GIT@|@COMMON@|@TOP@|recurse|git|fetch|origin	@NAME@	1	シンボリックリンク
+FETCH_HEADを外のファイルへのリンクにすると、動かさない。	git	: > ../outside-fetch && rm -f .git/FETCH_HEAD && ln -s "$(dirname "$PWD")/outside-fetch" .git/FETCH_HEAD	あり	-	@GIT@|@COMMON@|@TOP@|recurse|git|fetch|origin	@NAME@	1	シンボリックリンク
+objects/packをリンクにすると、動かさない。	git	mkdir ../outside && rm -rf .git/objects/pack && ln -s "$(dirname "$PWD")/outside" .git/objects/pack	あり	-	@GIT@|@COMMON@|@TOP@|recurse|git|fetch|origin	@NAME@	1	シンボリックリンク
+objects/の2桁のフォルダーをリンクにすると、動かさない。	git	mkdir ../outside && rm -rf .git/objects/ab && ln -s "$(dirname "$PWD")/outside" .git/objects/ab	あり	-	@GIT@|@COMMON@|@TOP@|recurse|git|fetch|origin	@NAME@	1	シンボリックリンク
+FETCH_HEADを外のファイルへのハードリンクにすると、動かさない。	git	: > ../outside-fetch && rm -f .git/FETCH_HEAD && ln "$(dirname "$PWD")/outside-fetch" .git/FETCH_HEAD	あり	-	@GIT@|@COMMON@|@TOP@|recurse|git|fetch|origin	@NAME@	1	ハードリンク
+logs/HEADを外のファイルへのハードリンクにすると、動かさない。	git	mkdir -p .git/logs && : > ../outside-log && rm -f .git/logs/HEAD && ln "$(dirname "$PWD")/outside-log" .git/logs/HEAD	あり	-	@GIT@|@COMMON@|@TOP@|recurse|git|fetch|origin	@NAME@	1	ハードリンク
+人が置いたhooks/の中のリンクのフックでは、動かす。	git	mkdir -p tools && : > tools/pre-commit && ln -s ../../tools/pre-commit .git/hooks/pre-commit	あり	-	@GIT@|@COMMON@|@TOP@|recurse|git|fetch|origin	@NAME@	0 dir=@CASE@/project/.git|@CASE@/project/.git|@CASE@/project lazy=1 config= args=[git][fetch][origin]	-
+hooks/のフォルダーそのものがリンクでも、動かす。	git	mkdir -p ../shared-hooks && rm -rf .git/hooks && ln -s "$(dirname "$PWD")/shared-hooks" .git/hooks	あり	-	@GIT@|@COMMON@|@TOP@|recurse|git|fetch|origin	@NAME@	0 dir=@CASE@/project/.git|@CASE@/project/.git|@CASE@/project lazy=1 config= args=[git][fetch][origin]	-
+人が置いたhooks/の中のハードリンクのフックでは、動かす。	git	mkdir -p tools && : > tools/pre-commit && ln tools/pre-commit .git/hooks/pre-commit	あり	-	@GIT@|@COMMON@|@TOP@|recurse|git|fetch|origin	@NAME@	0 dir=@CASE@/project/.git|@CASE@/project/.git|@CASE@/project lazy=1 config= args=[git][fetch][origin]	-
+サブモジュールのgitのフォルダーのhooks/の中のリンクのフックでは、動かす。	git	mkdir -p tools .git/modules/sub/hooks && : > tools/pre-commit && ln -s ../../../../tools/pre-commit .git/modules/sub/hooks/pre-commit	あり	-	@GIT@|@COMMON@|@TOP@|recurse|git|fetch|origin	@NAME@	0 dir=@CASE@/project/.git|@CASE@/project/.git|@CASE@/project lazy=1 config= args=[git][fetch][origin]	-
+サブモジュールのgitのフォルダーのhooks/の中のハードリンクのフックでは、動かす。	git	mkdir -p tools .git/modules/sub/hooks && : > tools/pre-commit && ln tools/pre-commit .git/modules/sub/hooks/pre-commit	あり	-	@GIT@|@COMMON@|@TOP@|recurse|git|fetch|origin	@NAME@	0 dir=@CASE@/project/.git|@CASE@/project/.git|@CASE@/project lazy=1 config= args=[git][fetch][origin]	-
+objects/の下のハードリンク（git clone --localの形）では、動かす。	git	mkdir -p .git/objects/ab && : > ../outside-object && ln "$(dirname "$PWD")/outside-object" .git/objects/ab/cdef	あり	-	@GIT@|@COMMON@|@TOP@|recurse|git|fetch|origin	@NAME@	0 dir=@CASE@/project/.git|@CASE@/project/.git|@CASE@/project lazy=1 config= args=[git][fetch][origin]	-
+worktreeで、worktreeのgitのフォルダーのFETCH_HEADをリンクにすると、動かさない。	worktree	: > ../outside-fetch && ln -s "$(dirname "$PWD")/outside-fetch" "$(git rev-parse --git-dir)/FETCH_HEAD"	あり	-	@GIT@|@COMMON@|@TOP@|recurse|git|fetch|origin	@NAME@	1	シンボリックリンク
+worktreeで、共通のgitのフォルダーのrefs/の下をリンクにすると、動かさない。	worktree	mkdir ../outside && ln -s "$(dirname "$PWD")/outside" "$(git rev-parse --git-common-dir)/refs/remotes"	あり	-	@GIT@|@COMMON@|@TOP@|recurse|git|fetch|origin	@NAME@	1	シンボリックリンク
+glabで、gitのフォルダーにconfig.ymlのあるglab-cliを作ると、動かさない。	git	mkdir .git/glab-cli && : > .git/glab-cli/config.yml	あり	-	@GIT@|@COMMON@|@TOP@|recurse|glab|mr|list	@NAME@	1	glab-cliがあります
+glabで、gitのフォルダーのglab-cliをリンクにすると、動かさない。	git	ln -s ../outside .git/glab-cli	あり	-	@GIT@|@COMMON@|@TOP@|recurse|glab|mr|list	@NAME@	1	glab-cliがシンボリックリンクです
+glabで、gitのフォルダーに空のglab-cliのフォルダーがあっても、動かす。	git	mkdir .git/glab-cli	あり	-	@GIT@|@COMMON@|@TOP@|recurse|glab|mr|list	@NAME@	0 dir=@CASE@/project/.git|@CASE@/project/.git|@CASE@/project lazy=1 config= args=[glab][mr][list]	-
+worktreeのglabで、共通のgitのフォルダーにconfig.ymlのあるglab-cliを作ると、動かさない。	worktree	mkdir "$(git rev-parse --git-common-dir)/glab-cli" && : > "$(git rev-parse --git-common-dir)/glab-cli/config.yml"	あり	-	@GIT@|@COMMON@|@TOP@|recurse|glab|mr|list	@NAME@	1	glab-cliがあります
+# 記録の中身の形の誤り
+git statusの記録では、動かさずに2で終わる。	git	-	あり	-	@GIT@|@COMMON@|@TOP@|recurse|git|status	@NAME@	2	動かせるのは
+lsの記録では、動かさずに2で終わる。	git	-	あり	-	@GIT@|@COMMON@|@TOP@|recurse|ls	@NAME@	2	動かせるのは
+相対パスのgitのフォルダーの記録では、2で終わる。	git	-	あり	-	.git|@COMMON@|@TOP@|recurse|gh|pr|merge|1	@NAME@	2	絶対パス
+4つ目がrecurseでもno-recurseでもない記録では、2で終わる。	git	-	あり	-	@GIT@|@COMMON@|@TOP@|yes|gh|pr|merge|1	@NAME@	2	recurseかno-recurse
