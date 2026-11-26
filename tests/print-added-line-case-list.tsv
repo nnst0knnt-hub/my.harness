@@ -1,0 +1,14 @@
+# print-added-line.shのケースの一覧。列は、説明の文、標準入力に渡す差分、期待する出力である。
+# 差分はprintfの%bの形で書く。出力は、タブを空白に変え、行を「|」でつないだもので、「-」は何も出さないことを表す。
+足した行を、ファイルと行の番号と一緒に出す。	diff --git a/f b/f\n--- a/f\n+++ b/f\n@@ -2,0 +3,2 @@\n+x\n+y\n	f:3 x|f:4 y
+消した行は出さず、行の番号に数えない。	diff --git a/f b/f\n--- a/f\n+++ b/f\n@@ -1,2 +1 @@\n-old\n-old2\n+new\n	f:1 new
+新しいファイルの行を出す。	diff --git a/n.txt b/n.txt\nnew file mode 100644\n--- /dev/null\n+++ b/n.txt\n@@ -0,0 +1 @@\n+a\n	n.txt:1 a
+消したファイルの行は出さない。	diff --git a/n.txt b/n.txt\ndeleted file mode 100644\n--- a/n.txt\n+++ /dev/null\n@@ -1 +0,0 @@\n-a\n	-
+2つのhunkの行を、それぞれの行の番号で出す。	diff --git a/f b/f\n--- a/f\n+++ b/f\n@@ -1,0 +2 @@\n+a\n@@ -5,0 +7 @@ main()\n+b\n	f:2 a|f:7 b
+2つのファイルの行を、それぞれのファイルで出す。	diff --git a/f b/f\n--- a/f\n+++ b/f\n@@ -0,0 +1 @@\n+a\ndiff --git a/g b/g\n--- a/g\n+++ b/g\n@@ -0,0 +1 @@\n+b\n	f:1 a|g:1 b
+マージのcommitの差分では、どの親にも無い行だけを出す。	diff --cc f\nindex 1,2..3\n--- a/f\n+++ b/f\n@@@ -4,0 -3,1 +4,2 @@@\n+ side\n++EVIL\n	f:5 EVIL
+マージのcommitの差分では、どれかの親から消した行を、行の番号に数えない。	diff --cc f\n--- a/f\n+++ b/f\n@@@ -1,2 -1,2 +1,1 @@@\n- old\n -old2\n++new\n	f:1 new
+git logの差分では、行の前にcommitの名前を付ける。	abc1234\n\ndiff --git a/f b/f\n--- a/f\n+++ b/f\n@@ -0,0 +1 @@\n+a\ndef5678\n\ndiff --git a/g b/g\n--- a/g\n+++ b/g\n@@ -0,0 +1 @@\n+b\n	abc1234のf:1 a|def5678のg:1 b
+末尾に改行が無いことを示す行は、出さず、行の番号に数えない。	diff --git a/f b/f\n--- a/f\n+++ b/f\n@@ -1 +1,2 @@\n-a\n\\ No newline at end of file\n+b\n+c\n\\ No newline at end of file\n	f:1 b|f:2 c
+hunkの中の「+++」で始まる行は、中身として出す。	diff --git a/f b/f\n--- a/f\n+++ b/f\n@@ -0,0 +1 @@\n++++ x\n	f:1 +++ x
+差分の形でない入力からは、何も出さない。	hello\nworld\n	-
