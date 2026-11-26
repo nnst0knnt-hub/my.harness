@@ -1,0 +1,17 @@
+# deny-protected-branch-push.shのケースの一覧。列は、説明の文、pushを動かす場所（mainかworktree）、メインの作業フォルダーの.harness/configの中身、git pushのリモートのあとの引数、期待する終了コードとリモートの変化である。
+# .harness/configの中身はprintfの%bの形で書き、「-」は置かないことを表す。リモートには、mainとfeatureのブランチが、手元の1つ前のcommitで置いてある。
+作業用のブランチへpushすると、通してリモートが変わる。	main	-	HEAD:feature	0 変わった
+新しい作業用のブランチへpushすると、通してリモートが変わる。	main	-	HEAD:refs/heads/fix/new	0 変わった
+mainへpushすると、止めてリモートが変わらない。	main	-	HEAD:main	1 変わらない
+refs/heads/mainの形でmainへpushしても、止める。	main	-	HEAD:refs/heads/main	1 変わらない
+releaseで始まるブランチへpushすると、止める。	main	-	HEAD:release-1.0	1 変わらない
+mainで始まる作業用のブランチへpushすると、通してリモートが変わる。	main	-	HEAD:main-fix	0 変わった
+mainを消すpushは、止める。	main	-	:main	1 変わらない
+保護するブランチと作業用のブランチへ一度にpushすると、すべて止める。	main	-	HEAD:feature HEAD:main	1 変わらない
+mainという名前のタグへのpushは、ブランチではないので通す。	main	-	HEAD:refs/tags/main	0 変わった
+.harness/configで足したブランチへpushすると、止める。	main	[protection]\n\tbranch = hotfix/*\n	HEAD:hotfix/x	1 変わらない
+.harness/configで足したブランチに当たらないブランチへpushすると、通す。	main	[protection]\n\tbranch = hotfix/*\n	HEAD:feature	0 変わった
+.harness/configの形が壊れていると、作業用のブランチへのpushも止める。	main	[protection\n	HEAD:feature	1 変わらない
+worktreeからmainへpushすると、止める。	worktree	-	HEAD:main	1 変わらない
+worktreeから作業用のブランチへpushすると、通す。	worktree	-	HEAD:feature	0 変わった
+worktreeでは、メインの作業フォルダーの.harness/configで足したブランチへのpushを止める。	worktree	[protection]\n\tbranch = hotfix/*\n	HEAD:hotfix/x	1 変わらない
