@@ -1,0 +1,22 @@
+# find-missing-backquote.shのケースの一覧。列は、説明の文、中身、期待する終了コード、期待する行である。
+# 中身はprintfの%bの形で書き、「-」は空のファイルに、「!」は読めないファイルにする。行の「-」は、報告が無いことを表す。
+# 名前は、data/backquote-name-list.txtの一覧のものを使う。
+囲んだ名前を渡すと、通す。	`pre-push`のフックが止める。\n	0	-
+囲まない名前を渡すと、その行を示して止める。	本文。\n\npre-pushのフックが止める。\n	1	3
+日本語に挟まれた名前も、止める。	導入はconfigure-repositoryで行う。\n	1	1
+長い名前の一部は数えないので、通す。	harness-pre-pushの設定と、domainの値を見る。\n	0	-
+英語の語の一部は数えないので、通す。	mainlyとremainを書く。\n	0	-
+パスの一部は名前として数えないので、通す。	origin/mainとskills/README.mdを見る。\n	0	-
+ファイル名の一部は数えないので、通す。	main.shを読む。\n	0	-
+コードブロックの中は数えないので、通す。	本文です。\n\n```text\npre-push\n```\n	0	-
+リンク先の中は数えないので、通す。	[手引き](docs/main/guide.md)を読む。\n	0	-
+リンクの文の中の名前は、止める。	[CONTRIBUTING.md](CONTRIBUTING.md)を読む。\n	1	1
+出典の節の中は数えないので、通す。	## 出典\n\n- 「the main branch」\n	0	-
+出典の次の節は数えるので、止める。	## 出典\n\n- 「main」\n\n## 次\n\nmainへ送る。\n	1	7
+除く形の使い方は数えないので、通す。	pre-commitのフレームワークのフックを動かす。\n	0	-
+除く形と同じ行の名前は、止める。	pre-commitのフレームワークと、gitのpre-commitを使う。\n	1	1
+見出しの中の名前も、止める。	## propose-changeの手順\n	1	1
+前付けの中は数えないので、通す。	---\nname: reviewer\n---\n\n本文です。\n	0	-
+1つの行の2つの名前を、名前ごとに示して止める。	pre-pushとcommit-msgを足す。\n	1	1 1
+空のファイルを渡すと、通す。	-	0	-
+読めないファイルを渡すと、使い方の誤りで終わる。	!	2	-

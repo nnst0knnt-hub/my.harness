@@ -1,0 +1,30 @@
+# linters/find-missing-backquote.shが探す、バッククォートで囲んで書く名前の一覧。1行が1つの名前で、列は、名前、除く形（任意）である。
+# 名前は文字どおりに書く。除く形はLC_ALL=Cのawkの正規表現で書き、名前を探す前に行から消す。同じ綴りを、囲まない使い方（例：製品やツールの名前）で書く所を除くためである。
+# どの種類の名前を囲むかは、rules/writing.mdの節「バッククォート」に書く。スキル、サブエージェント、gitのフック、保護するブランチを足したら、ここにも足す。
+investigate-code
+propose-change
+implement-change
+audit-security
+resolve-review-comment
+review-pr
+configure-repository
+add-rule
+reviewer
+pre-push
+pre-commit	pre-commitのフレームワーク
+commit-msg
+reference-transaction
+pre-auto-gc
+SessionStart
+PreToolUse
+Stop
+main
+master
+develop
+staging
+production
+CLAUDE.md
+AGENTS.md
+SKILL.md
+README.md
+CONTRIBUTING.md
