@@ -1,0 +1,7 @@
+{
+  "name": "my-harness",
+  "description": "AIのエージェントにプロダクトの改修を任せるときに、成果物の誤りと人の手間を減らすための、ルール、スキル、フック、スクリプト",
+  "author": {
+    "name": "nnst0knnt-hub"
+  }
+}

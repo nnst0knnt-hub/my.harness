@@ -1,0 +1,13 @@
+{
+  "name": "nnst0knnt",
+  "description": "my.harnessを、手元のパスからClaude Codeのプラグインとして登録するための一覧",
+  "owner": {
+    "name": "nnst0knnt-hub"
+  },
+  "plugins": [
+    {
+      "name": "my-harness",
+      "source": "./"
+    }
+  ]
+}
