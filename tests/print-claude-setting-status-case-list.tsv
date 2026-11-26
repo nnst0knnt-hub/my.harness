@@ -1,0 +1,54 @@
+# print-claude-setting-status.shのケースの一覧。列は、説明の文、PCの設定、導入先の.claude/settings.json、.claude/settings.local.json、.mcp.json、期待する結果である。
+# 設定の列は、JSONの中身か、「-」（ファイル無し）、「0」（中身の無いファイル）、「!」（読めないファイル）、「d」（ファイルの代わりのフォルダー）で書く。
+# 結果は、行ごとの「状態の字:項目」を「;」でつないだものである。状態の字は、働くがo、働かないがx、確かめるが!、わからないが?である。項目のファイルのパスは、pc、shared、local、mcpに置き換える。
+設定のファイルが1つも無ければ、働くの行を1つ出す。	-	-	-	-	o:Claude Codeの設定
+PCの設定の一覧（例：permissions.allow、excludedCommands）は、書き換えたコマンドに当たらない値のほかは読まない。	{"permissions": {"allow": ["Bash(npm test)"]}, "sandbox": {"enabled": true, "excludedCommands": ["gh *"]}}	-	-	-	o:Claude Codeの設定
+PCの設定の、もとの形のgit pushのdenyは、書き換えたコマンドに当たらないので働かないにする。	{"permissions": {"deny": ["Bash(git push *--no-verify*)", "Bash(git commit *--no-verify*)"]}}	-	-	-	x:pcのpermissions.deny（"Bash(git push *--no-verify*)"）
+スクリプトの後ろに語を書いた書き換えた形のdenyとaskは、書き換えたコマンドに当たらないので働かないにする。	{"permissions": {"deny": ["Bash(bash /h/hooks/exec-with-pinned-git-directory.sh * git push *--no-verify*)"], "ask": ["Bash(bash /h/hooks/exec-with-pinned-git-directory.sh * git push *)"]}}	-	-	-	x:pcのpermissions.deny（"Bash(bash /h/hooks/exec-with-pinned-git-directory.sh * git push *--no-verify*)"）;x:pcのpermissions.ask（"Bash(bash /h/hooks/exec-with-pinned-git-directory.sh * git push *)"）
+スクリプトの呼び出しの全体に当てるdenyと、確認を求めるghのaskは、示さない。	{"permissions": {"deny": ["Bash(bash /h/hooks/exec-with-pinned-git-directory.sh *)"], "ask": ["Bash(gh pr create *)"]}}	-	-	-	o:Claude Codeの設定
+ghのdenyは、確認を求めるghに当たらないので働かないにする。	{"permissions": {"deny": ["Bash(gh pr merge *)", "Bash(ghost *)"]}}	-	-	-	x:pcのpermissions.deny（"Bash(gh pr merge *)"）
+導入先のgit pushとglabのaskは、ファイルごとに働かないにする。	-	{"permissions": {"ask": ["Bash(glab:*)"]}}	{"permissions": {"ask": ["Bash(git push *)", "Bash(npm *)"]}}	-	x:sharedのpermissions.ask（"Bash(glab:*)"）;x:localのpermissions.ask（"Bash(git push *)"）
+PCの設定のexcludedCommandsに残ったgit pushとgit fetchは、働かないにする。	{"sandbox": {"excludedCommands": ["git push *", "git fetch *", "gh *"]}}	-	-	-	x:pcのsandbox.excludedCommands（"git push *"、"git fetch *"）
+PCの設定のexcludedCommandsの、空白の無い形と:の形のgit push、git fetch、glabも、働かないにする。	{"sandbox": {"excludedCommands": ["git push*", "git fetch:*", "glab*", "gh *"]}}	-	-	-	x:pcのsandbox.excludedCommands（"git push*"、"git fetch:*"、"glab*"）
+PCの設定のexcludedCommandsの、gitのすべてに当たる広い値も、働かないにする。	{"sandbox": {"excludedCommands": ["git *", "git*", "git:*"]}}	-	-	-	x:pcのsandbox.excludedCommands（"git *"、"git*"、"git:*"）
+PCの設定のexcludedCommandsの、git pushとgit fetchに当たらないgitの値は、働かないにしない。	{"sandbox": {"excludedCommands": ["git status", "git-lfs *", "gh *"]}}	-	-	-	o:Claude Codeの設定
+導入先のexcludedCommandsのglabは、働かないと確かめるの両方で示す。	-	{"sandbox": {"excludedCommands": ["glab *"]}}	-	-	x:sharedのsandbox.excludedCommands（"glab *"）;!:sharedのsandbox.excludedCommands（"glab *"）
+中身の無いファイルは、何も書いていない設定として読む。	0	0	0	0	o:Claude Codeの設定
+導入先の.claude/settings.jsonがdisableAllHooksをtrueにすれば、働かないにする。	-	{"disableAllHooks": true}	-	-	x:sharedのdisableAllHooks（true）
+.claude/settings.local.jsonのfalseが先に当たれば、disableAllHooksを示さない。	-	{"disableAllHooks": true}	{"disableAllHooks": false}	-	o:Claude Codeの設定
+PCの設定のdisableAllHooksのtrueも、働かないにする。	{"disableAllHooks": true}	-	-	-	x:pcのdisableAllHooks（true）
+.claude/settings.jsonのtrueが、PCの設定のfalseより先に当たる。	{"disableAllHooks": false}	{"disableAllHooks": true}	-	-	x:sharedのdisableAllHooks（true）
+導入先がsandbox.enabledをfalseにすれば、働かないにする。	{"sandbox": {"enabled": true}}	{"sandbox": {"enabled": false}}	-	-	x:sharedのsandbox.enabled（false）
+PCの設定のsandbox.enabledのfalseは、PCの設定の行が示すので、示さない。	{"sandbox": {"enabled": false}}	-	-	-	o:Claude Codeの設定
+.claude/settings.local.jsonのfailIfUnavailableのfalseを、働かないにする。	{"sandbox": {"failIfUnavailable": true}}	-	{"sandbox": {"failIfUnavailable": false}}	-	x:localのsandbox.failIfUnavailable（false）
+.claude/settings.local.jsonのtrueが先に当たれば、.claude/settings.jsonのfalseを示さない。	-	{"sandbox": {"failIfUnavailable": false}}	{"sandbox": {"failIfUnavailable": true}}	-	o:Claude Codeの設定
+導入先がハーネスのプラグインを無効にすれば、働かないにする。	-	{"enabledPlugins": {"my-harness@nnst0knnt": false}}	-	-	x:sharedのenabledPlugins.my-harness@nnst0knnt（false）
+ハーネスのプラグインを有効にする値は、示さない。	{"enabledPlugins": {"my-harness@nnst0knnt": true}}	-	{"enabledPlugins": {"my-harness@nnst0knnt": true}}	-	o:Claude Codeの設定
+ほかのプラグインを有効にする値だけを、確かめるにする。	-	{"enabledPlugins": {"tool@team": true, "old@team": false}}	-	-	!:sharedのenabledPlugins（tool@team: true）
+自前のプロキシのポートは、値があれば働かないにする。	-	{"sandbox": {"network": {"httpProxyPort": 8080}}}	-	-	x:sharedのsandbox.network.httpProxyPort（8080）
+サンドボックスを弱める真偽値は、trueのときだけ働かないにする。	-	{"sandbox": {"network": {"allowAllUnixSockets": true, "allowLocalBinding": false}}}	-	-	x:sharedのsandbox.network.allowAllUnixSockets（true）
+導入先のallowLocalBindingのtrueは、人が選んで足すことがあるので、確かめるにする。	-	-	{"sandbox": {"network": {"allowLocalBinding": true}}}	-	!:localのsandbox.network.allowLocalBinding（true）
+PCの設定のallowLocalBindingのtrueは、すべてのプロジェクトに当たるので、働かないにする。	{"sandbox": {"network": {"allowLocalBinding": true}}}	-	-	-	x:pcのsandbox.network.allowLocalBinding（true）
+PCの設定のallowLocalBindingのtrueは、導入先のfalseがあっても、働かないにする。	{"sandbox": {"network": {"allowLocalBinding": true}}}	-	{"sandbox": {"network": {"allowLocalBinding": false}}}	-	x:pcのsandbox.network.allowLocalBinding（true）
+PCの設定でだけ当たるサンドボックスを止める値（例：filesystem.disabled）を、働かないにする。	{"sandbox": {"filesystem": {"disabled": true}, "allowNestedUserNamespaces": true, "allowAppleEvents": true}}	-	-	-	x:pcのsandbox.filesystem.disabled（true）;x:pcのsandbox.allowNestedUserNamespaces（true）;x:pcのsandbox.allowAppleEvents（true）
+PCの設定でだけ当たる値は、導入先のfalseがあってもPCの設定の値で示す。	{"sandbox": {"filesystem": {"disabled": true}}}	{"sandbox": {"filesystem": {"disabled": false}}}	-	-	x:pcのsandbox.filesystem.disabled（true）
+PCの設定でだけ当たる値を導入先に書いても、示さない。	-	{"sandbox": {"filesystem": {"disabled": true}, "allowAppleEvents": true}, "processWrapper": "x.sh"}	-	-	o:Claude Codeの設定
+導入先のexcludedCommandsの項目を、確かめるにする。	-	{"sandbox": {"excludedCommands": ["docker *", "make *"]}}	-	-	!:sharedのsandbox.excludedCommands（"docker *"、"make *"）
+.claude/settings.local.jsonの許す通信先も、確かめるにする。	-	-	{"sandbox": {"network": {"allowedDomains": ["registry.npmjs.org"]}}}	-	!:localのsandbox.network.allowedDomains（"registry.npmjs.org"）
+導入先のpermissions.allowを、確かめるにする。	-	{"permissions": {"allow": ["WebFetch(domain:example.com)"]}}	-	-	!:sharedのpermissions.allow（"WebFetch(domain:example.com)"）
+PCの設定と導入先のフックを、ファイルごとに確かめるにする。	{"hooks": {"Notification": [{"hooks": [{"type": "command", "command": "notify"}]}]}}	{"hooks": {"PreToolUse": [{"hooks": [{"type": "command", "command": "x.sh"}]}]}}	-	-	!:pcのhooks（Notification: [{"hooks":[{"type":"command","command":"notify"}]}]）;!:sharedのhooks（PreToolUse: [{"hooks":[{"type":"command","command":"x.sh"}]}]）
+コマンドを動かす設定（例：statusLine）を、確かめるにする。	{"statusLine": {"type": "command", "command": "status.sh"}}	-	-	-	!:pcのstatusLine（type: "command"、command: "status.sh"）
+文字列のコマンドの設定（例：apiKeyHelper）も、確かめるにする。	-	{"apiKeyHelper": "key.sh"}	-	-	!:sharedのapiKeyHelper（"key.sh"）
+PCの設定のprocessWrapperを、確かめるにする。	{"processWrapper": "/opt/launcher"}	-	-	-	!:pcのprocessWrapper（"/opt/launcher"）
+マーケットプレイスは、headersHelperを持つものだけを確かめるにする。	{"extraKnownMarketplaces": {"my-harness": {"source": {"source": "directory", "path": "/h"}}, "corp": {"source": {"source": "url", "url": "https://x", "headersHelper": "h.sh"}}}}	-	-	-	!:pcのextraKnownMarketplaces（corp: {"source":{"source":"url","url":"https://x","headersHelper":"h.sh"}}）
+別名のadditionalMarketplacesも、headersHelperを持つものを確かめるにする。	{"additionalMarketplaces": {"corp": {"source": {"source": "url", "url": "https://x", "headersHelper": "h.sh"}}}}	-	-	-	!:pcのadditionalMarketplaces（corp: {"source":{"source":"url","url":"https://x","headersHelper":"h.sh"}}）
+PCの設定のコマンドを指すキー（例：sandbox.ripgrep、sshHostCommands）を、確かめるにする。	{"sandbox": {"ripgrep": {"command": "/opt/rg"}}, "sshHostCommands": [{"command": "hosts.sh"}]}	-	-	-	!:pcのsandbox.ripgrep（command: "/opt/rg"）;!:pcのsshHostCommands（{"command":"hosts.sh"}）
+ハーネスと同じ名前でほかのマーケットプレイスのプラグインは、確かめるにする。	-	{"enabledPlugins": {"my-harness@nnst0knnt": true, "my-harness@other": true}}	-	-	!:sharedのenabledPlugins（my-harness@other: true）
+.mcp.jsonのMCPのサーバーを、確かめるにする。	-	-	-	{"mcpServers": {"db": {"command": "npx", "args": ["db-server"]}}}	!:mcpのmcpServers（db: {"command":"npx","args":["db-server"]}）
+.mcp.jsonのサーバーを承認する値は、falseでないものだけを確かめるにする。	-	{"enableAllProjectMcpServers": false, "enabledMcpjsonServers": ["db"]}	-	-	!:sharedのenabledMcpjsonServers（"db"）
+導入先の値で緩められないキー（例：allowUnsandboxedCommands、deny）は、示さない。	-	{"sandbox": {"allowUnsandboxedCommands": true, "autoAllowBashIfSandboxed": false, "network": {"deniedDomains": ["example.com"]}}, "permissions": {"deny": ["Read(x)"], "ask": ["Edit(y)"], "defaultMode": "acceptEdits"}}	-	-	o:Claude Codeの設定
+働かない値と確かめる項目があれば、一覧の順に両方を出す。	-	{"sandbox": {"excludedCommands": ["docker *"]}, "disableAllHooks": true}	-	-	x:sharedのdisableAllHooks（true）;!:sharedのsandbox.excludedCommands（"docker *"）
+上の段が文字列でも止まらず、ほかのキーを読む。	-	{"sandbox": "x", "disableAllHooks": true}	-	-	x:sharedのdisableAllHooks（true）
+壊れたJSONなら、わからないにする。	-	{"sandbox": {	-	-	?:Claude Codeの設定（sharedを読めません）
+読めないファイルなら、わからないにする。	-	-	!	-	?:Claude Codeの設定（localを読めません）
+ふつうのファイルでない.mcp.json（例：フォルダー）は、無いファイルとして読む。	-	-	-	d	o:Claude Codeの設定

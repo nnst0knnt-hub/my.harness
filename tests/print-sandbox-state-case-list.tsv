@@ -1,0 +1,31 @@
+# print-sandbox-state.shのケースの一覧。列は、説明の文、OS（linux、wsl1、wsl2、darwin、other）、動かないコマンド（「,」で区切る、「-」は無し）、設定のファイル（空白で区切った「場所=中身」、「-」は無し）、期待する出力である。
+# 場所は、managed（管理者の設定のファイル）、drop（管理者の設定のフォルダーのmanaged-settings.d/の中）、local（メインの作業フォルダーの.claude/settings.local.json）、project（作業フォルダーの.claude/settings.json）、user（HOMEの.claude/settings.json）、configdir（CLAUDE_CONFIG_DIRの中のsettings.json）、worktreelocal（作業フォルダーの.claude/settings.local.json）である。
+# 中身は、true、false（sandbox.enabledの値）、string（値が文字列の"true"）、none（sandboxの無いJSON）、broken（壊れたJSON）、unreadable（読めないファイル）、folder（フォルダー）、device（文字デバイスの/dev/nullを指すリンク）である。
+Linuxで依存があり、PCの設定で有効なら、有効にする。	linux	-	user=true	enabled
+設定のファイルが無ければ、無効にする。	linux	-	-	disabled
+PCの設定で無効なら、無効にする。	linux	-	user=false	disabled
+PCの設定にsandboxが無ければ、無効にする。	linux	-	user=none	disabled
+値が真偽値でなく文字列なら、無効にする。	linux	-	user=string	disabled
+bubblewrapが動かなければ、依存が無いにする。	linux	bwrap	user=true	missing-dependency
+socatが動かなければ、依存が無いにする。	linux	socat	user=true	missing-dependency
+設定で無効でも、依存が無ければ、先に依存が無いにする。	linux	bwrap,socat	-	missing-dependency
+WSL2は、Linuxと同じく依存があれば有効にする。	wsl2	-	user=true	enabled
+WSL1なら、使えないにする。	wsl1	-	user=true	unsupported
+LinuxとmacOSのほかのOSなら、使えないにする。	other	-	user=true	unsupported
+macOSでは、bubblewrapとsocatが無くても有効にする。	darwin	bwrap,socat	user=true	enabled
+jqが動かなければ、わからないにする。	linux	jq	user=true	unknown
+jqが動かなくても、設定のファイルが1つも無ければ、無効にする。	linux	jq	-	disabled
+PCの設定が壊れたJSONなら、わからないにする。	linux	-	user=broken	unknown
+PCの設定が読めなければ、わからないにする。	linux	-	user=unreadable	unknown
+導入先の設定の場所がフォルダーなら、無いファイルとして飛ばし、次の設定のファイルを読む。	linux	-	project=folder user=true	enabled
+導入先の設定の場所が文字デバイスなら、無いファイルとして飛ばし、次の設定のファイルを読む。	linux	-	project=device user=true	enabled
+自分だけの設定の場所が文字デバイスなら、無いファイルとして飛ばし、次の設定のファイルを読む。	linux	-	local=device project=true	enabled
+導入先の設定の無効は、PCの設定の有効より先に当たる。	linux	-	user=true project=false	disabled
+自分だけの設定の無効は、導入先の設定の有効より先に当たる。	linux	-	project=true local=false	disabled
+自分だけの設定の有効は、PCの設定の無効より先に当たる。	linux	-	user=false local=true	enabled
+管理者の設定の無効は、自分だけの設定の有効より先に当たる。	linux	-	managed=false local=true	disabled
+管理者の設定の有効は、PCの設定の無効より先に当たる。	linux	-	managed=true user=false	enabled
+管理者の設定のフォルダーの値は、管理者の設定のファイルの値より先に当たる。	linux	-	managed=true drop=false	disabled
+sandboxの無い設定のファイルは飛ばし、次の設定のファイルを読む。	linux	-	local=none project=true	enabled
+自分だけの設定は、作業フォルダーではなく、メインの作業フォルダーのものを読む。	linux	-	worktreelocal=true	disabled
+CLAUDE_CONFIG_DIRがあれば、HOMEではなく、そのフォルダーのPCの設定を読む。	linux	-	configdir=true user=false	enabled

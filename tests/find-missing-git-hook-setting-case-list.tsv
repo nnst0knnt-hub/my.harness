@@ -1,0 +1,17 @@
+# find-missing-git-hook-setting.shのケースの一覧。列は、説明の文、動かす場所（tests/create-case-repository.shのcreate_case_repositoryの場所）、ハーネスの場所（other：別のフォルダー、self：導入先そのもの、unreadable：スクリプトをコピーし、gitのフックの一覧を読めなくした別のフォルダー）、動かす前に動かす設定のコマンド、期待する結果である。
+# 設定のコマンドは、動かす場所で、HOMEをケースのフォルダーにして動かす。CASE_HARNESS_ROOTは、テストで決めたハーネスの場所である。「-」は何もしないことを表す。ADD_ALLは、テストが決めた、3つのフックをすべて足すコマンドである。
+# 結果は、標準出力の行の名前（「:」の前）を「,」でつないだもの（無ければ「なし」）と、終了コードである。
+何も足していなければ、3つのフックをすべて出す。	git	other	-	harness-protected-branch,harness-secret-pre-push,harness-secret-pre-commit 1
+3つのフックをすべて足してあれば、何も出さずに0で終わる。	git	other	ADD_ALL	なし 0
+pre-commitのフックだけが無ければ、それだけを出す。	git	other	ADD_ALL && git config --unset hook.harness-secret-pre-commit.command	harness-secret-pre-commit 1
+イベントが違えば、無いものとして出す。	git	other	ADD_ALL && git config hook.harness-secret-pre-commit.event pre-push	harness-secret-pre-commit 1
+イベントが複数あり、その中にあれば、足してあるとみなす。	git	other	ADD_ALL && git config --add hook.harness-protected-branch.event pre-commit	なし 0
+コマンドがハーネスの場所の外を指せば、無いものとして出す。	git	other	ADD_ALL && git config hook.harness-protected-branch.command /tmp/scripts/deny-protected-branch-push.sh	harness-protected-branch 1
+コマンドの引数が違えば、無いものとして出す。	git	other	ADD_ALL && git config hook.harness-secret-pre-push.command "${CASE_HARNESS_ROOT}/scripts/find-secret-in-commit.sh pre-commit"	harness-secret-pre-push 1
+スクリプトのパスを二重引用符で囲んだコマンドも、足してあるとみなす。	git	other	ADD_ALL && git config hook.harness-secret-pre-push.command "\"${CASE_HARNESS_ROOT}/scripts/find-secret-in-commit.sh\" pre-push"	なし 0
+worktreeでは、メインの作業フォルダーと同じ.git/configを読む。	worktree	other	ADD_ALL	なし 0
+ハーネスのリポジトリでは、commit-msgのフックも出す。	git	self	ADD_ALL	harness-commit-message 1
+ハーネスのリポジトリで4つを足してあれば、0で終わる。	git	self	ADD_ALL && git config hook.harness-commit-message.command "${CASE_HARNESS_ROOT}/scripts/find-banned-word.sh" && git config hook.harness-commit-message.event commit-msg	なし 0
+gitのリポジトリの外なら、何も出さずに1で終わる。	外	other	-	なし 1
+gitのフックの一覧を読めなければ、何も出さずに1で終わる。	git	unreadable	-	なし 1
+gitのPCの設定に3つのフックを足してあれば、足してあるとみなす。	git	other	git config --global hook.harness-protected-branch.command "${CASE_HARNESS_ROOT}/scripts/deny-protected-branch-push.sh" && git config --global hook.harness-protected-branch.event pre-push && git config --global hook.harness-secret-pre-push.command "${CASE_HARNESS_ROOT}/scripts/find-secret-in-commit.sh pre-push" && git config --global hook.harness-secret-pre-push.event pre-push && git config --global hook.harness-secret-pre-commit.command "${CASE_HARNESS_ROOT}/scripts/find-secret-in-commit.sh pre-commit" && git config --global hook.harness-secret-pre-commit.event pre-commit	なし 0

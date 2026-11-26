@@ -1,0 +1,28 @@
+# print-protection-status.shのケースの一覧。列は、説明の文、OS、動かないコマンド（tests/print-sandbox-state-case-list.tsvと同じ書き方）、gitのバージョン、Claude Codeのバージョン（「-」はclaudeが無い）、PCの設定（full：勧める設定をすべて書く、without:<値>：勧める設定から一覧のその値だけを抜く、partial：sandbox.enabledだけ、-：無し）、導入先（hooked：3つのフックを足したリポジトリ、bare：フックの無いリポジトリ、bare-repository：メインの作業フォルダーを求められないgitのbareのリポジトリ、outside：gitの外）、導入先の.claude/settings.jsonの中身（「-」は無し）、期待する結果である。
+# 結果は、項目ごとの状態の最初の字（働く：o、働かない：x、確かめる：!、わからない：?、起きることの行がjqを挙げるわからない：j、見ない：-）を、git、jq、Claude Code、サンドボックス、PCの設定、Claude Codeの設定（scripts/print-claude-setting-status.shの行）、導入先のgitのフックの順に並べたものと、終了コードである。
+すべてがそろっていれば、すべて働き、0で終わる。	linux	-	2.56.1	2.1.320	full	hooked	-	ooooooo 0
+gitが2.54より古ければ、gitの行を働かないにする。	linux	-	2.53.0	2.1.320	full	hooked	-	xoooooo 1
+gitが2.54.0ちょうどなら、働くにする。	linux	-	2.54.0	2.1.320	full	hooked	-	ooooooo 0
+Appleのgitの形のバージョンも読む。	linux	-	2.39.5 (Apple Git-154)	2.1.320	full	hooked	-	xoooooo 1
+jqが動かなければ、jqとサンドボックスとPCの設定とClaude Codeの設定を、働かないかわからないにする。	linux	jq	2.56.1	2.1.320	full	hooked	-	oxojj?o 1
+Claude Codeが、Monitorのコマンドにフックが動く2.1.314より古ければ、働かないにする。	linux	-	2.56.1	2.1.313	full	hooked	-	ooxoooo 1
+Claude Codeが2.1.314ちょうどなら、働くにする。	linux	-	2.56.1	2.1.314	full	hooked	-	ooooooo 0
+Claude Codeの2桁目が大きければ、3桁目が小さくても働くにする。	linux	-	2.56.1	2.2.0	full	hooked	-	ooooooo 0
+claudeが無ければ、わからないにする。	linux	-	2.56.1	-	full	hooked	-	oo?oooo 1
+依存が動かなければ、サンドボックスを働かないにする。	linux	socat	2.56.1	2.1.320	full	hooked	-	oooxooo 1
+PCの設定が無ければ、サンドボックスとPCの設定を働かないにする。	linux	-	2.56.1	2.1.320	-	hooked	-	oooxxoo 1
+PCの設定が足りなければ、PCの設定を働かないにする。	linux	-	2.56.1	2.1.320	partial	hooked	-	ooooxoo 1
+秘密鍵の*.pemのReadのdenyが無ければ、PCの設定を働かないにする。	linux	-	2.56.1	2.1.320	without:Read(**/*.pem)	hooked	-	ooooxoo 1
+秘密鍵の*.keyのEditのdenyが無ければ、PCの設定を働かないにする。	linux	-	2.56.1	2.1.320	without:Edit(**/*.key)	hooked	-	ooooxoo 1
+FIDOの鍵のid_ed25519_skのReadのdenyが無ければ、PCの設定を働かないにする。	linux	-	2.56.1	2.1.320	without:Read(**/id_ed25519_sk)	hooked	-	ooooxoo 1
+Javaのキーストアの*.keystoreのReadのdenyが無ければ、PCの設定を働かないにする。	linux	-	2.56.1	2.1.320	without:Read(**/*.keystore)	hooked	-	ooooxoo 1
+Linuxのglabの設定のファイルのReadのdenyが無ければ、PCの設定を働かないにする。	linux	-	2.56.1	2.1.320	without:Read(~/.config/glab-cli/**)	hooked	-	ooooxoo 1
+macOSのglabの設定のファイルのReadのdenyが無ければ、PCの設定を働かないにする。	linux	-	2.56.1	2.1.320	without:Read(~/Library/Application Support/glab-cli/**)	hooked	-	ooooxoo 1
+リポジトリのglabの設定のファイルのReadのdenyが無ければ、PCの設定を働かないにする。	linux	-	2.56.1	2.1.320	without:Read(**/.git/glab-cli/**)	hooked	-	ooooxoo 1
+excludedCommandsにgh *が無ければ、PCの設定を働かないにする。	linux	-	2.56.1	2.1.320	without:gh *	hooked	-	ooooxoo 1
+導入先にフックが無ければ、導入先のgitのフックを働かないにする。	linux	-	2.56.1	2.1.320	full	bare	-	oooooox 1
+gitの外で動かせば、導入先のgitのフックは見ない。	linux	-	2.56.1	2.1.320	full	outside	-	oooooo- 0
+メインの作業フォルダーを求められないbareのリポジトリで動かせば、導入先のgitのフックをわからないにする。	linux	-	2.56.1	2.1.320	full	bare-repository	-	oooooo? 1
+macOSでは、依存が無くてもサンドボックスを働くにする。	darwin	bwrap,socat	2.56.1	2.1.320	full	hooked	-	ooooooo 0
+導入先の設定がハーネスのフックを止めれば、働かないにして1で終わる。	linux	-	2.56.1	2.1.320	full	hooked	{"disableAllHooks": true}	oooooxo 1
+導入先の設定の確かめる項目は、働かない数に入れず、0で終わる。	linux	-	2.56.1	2.1.320	full	hooked	{"permissions": {"allow": ["WebFetch(domain:example.com)"]}}	ooooo!o 0

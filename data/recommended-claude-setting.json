@@ -1,0 +1,90 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Edit(**/.env)",
+      "Edit(**/.env.*)",
+      "Read(**/*.p12)",
+      "Read(**/*.pfx)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/id_rsa)",
+      "Read(**/id_dsa)",
+      "Read(**/id_ecdsa)",
+      "Read(**/id_ed25519)",
+      "Read(**/id_ecdsa_sk)",
+      "Read(**/id_ed25519_sk)",
+      "Read(**/*.ppk)",
+      "Read(**/*.p8)",
+      "Read(**/*.jks)",
+      "Read(**/*.keystore)",
+      "Edit(**/*.pem)",
+      "Edit(**/*.key)",
+      "Edit(**/id_rsa)",
+      "Edit(**/id_dsa)",
+      "Edit(**/id_ecdsa)",
+      "Edit(**/id_ed25519)",
+      "Edit(**/id_ecdsa_sk)",
+      "Edit(**/id_ed25519_sk)",
+      "Edit(**/*.ppk)",
+      "Edit(**/*.p8)",
+      "Edit(**/*.jks)",
+      "Edit(**/*.keystore)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.config/gh/**)",
+      "Read(~/.config/glab-cli/**)",
+      "Read(~/Library/Application Support/glab-cli/**)",
+      "Read(**/.git/glab-cli/**)",
+      "Read(~/.git-credentials)",
+      "Read(~/.netrc)",
+      "Read(~/.docker/config.json)",
+      "Read(~/.kube/config)",
+      "Bash(git commit *--no-verify*)",
+      "Bash(git commit -n*)",
+      "Bash(git commit * -n*)"
+    ],
+    "ask": [
+      "Edit(**/.harness/rules/**)",
+      "Edit(**/.harness/config)",
+      "Edit(**/.git/config)",
+      "Edit(**/.git/hooks/**)",
+      "Edit(**/.claude/settings.json)",
+      "Edit(**/.claude/settings.local.json)",
+      "Edit(~/.claude/settings.json)",
+      "Edit(~/.gitconfig)",
+      "Edit(~/.config/git/**)",
+      "Edit(~/.bashrc)",
+      "Edit(~/.bash_profile)",
+      "Edit(~/.bash_login)",
+      "Edit(~/.profile)",
+      "Edit(~/.zshrc)",
+      "Edit(~/.zprofile)",
+      "Edit(~/.zshenv)"
+    ],
+    "allow": [
+      "Edit(**/.harness/docs/**)",
+      "Read(/<ハーネスの場所>/**)",
+      "Bash(bash <ハーネスの場所>/scripts/*)"
+    ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "failIfUnavailable": true,
+    "allowUnsandboxedCommands": false,
+    "excludedCommands": [
+      "bash <ハーネスの場所>/hooks/exec-with-pinned-git-directory.sh *",
+      "gh *"
+    ],
+    "network": {
+      "deniedDomains": [
+        "github.com",
+        "*.github.com",
+        "gitlab.com",
+        "*.gitlab.com"
+      ]
+    }
+  }
+}

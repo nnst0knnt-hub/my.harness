@@ -1,0 +1,15 @@
+# find-missing-claude-setting.shのケースの一覧。列は、説明の文、PCの設定のファイルの中身（「-」はファイル無し、「!」は読めないファイル）、期待する結果である。
+# 勧める設定は、テストが作る{"top": {"list": ["x", "<ハーネスの場所>/y"], "flag": true, "off": false, "nested": {"value": "z"}}}である。<ハーネスの場所>は、テストが渡すハーネスの場所に置き換わる。
+# 結果は、標準出力の行を「;」でつないだもの（無ければ「なし」）と、終了コードである。ROOTは、テストが渡すハーネスの場所を表す。
+勧める設定がすべてあれば、何も出さずに0で終わる。	{"top": {"list": ["x", "ROOT/y"], "flag": true, "off": false, "nested": {"value": "z"}}}	なし 0
+一覧に勧める項目のほかの項目があっても、0で終わる。	{"top": {"list": ["w", "x", "ROOT/y", "v"], "flag": true, "off": false, "nested": {"value": "z"}, "other": 1}}	なし 0
+設定のファイルが無ければ、勧める設定をすべて出す。	-	top.list: "x";top.list: "ROOT/y";top.flag: true;top.off: false;top.nested.value: "z" 1
+一覧に無い項目だけを出す。	{"top": {"list": ["x"], "flag": true, "off": false, "nested": {"value": "z"}}}	top.list: "ROOT/y" 1
+値が違えば、勧める値を出す。	{"top": {"list": ["x", "ROOT/y"], "flag": false, "off": false, "nested": {"value": "z"}}}	top.flag: true 1
+真偽値の代わりに文字列なら、違う値として出す。	{"top": {"list": ["x", "ROOT/y"], "flag": "true", "off": false, "nested": {"value": "z"}}}	top.flag: true 1
+ハーネスの場所を置き換えずに書いた項目は、無いものとして出す。	{"top": {"list": ["x", "<ハーネスの場所>/y"], "flag": true, "off": false, "nested": {"value": "z"}}}	top.list: "ROOT/y" 1
+上の段が文字列でも止まらず、その下をすべて出す。	{"top": "x"}	top.list: "x";top.list: "ROOT/y";top.flag: true;top.off: false;top.nested.value: "z" 1
+一覧の代わりに文字列なら、一覧の項目を出す。	{"top": {"list": "x", "flag": true, "off": false, "nested": {"value": "z"}}}	top.list: "x";top.list: "ROOT/y" 1
+壊れたJSONなら、何も出さずに1で終わる。	{"top": {"flag": true,}}	なし 1
+読めないファイルなら、何も出さずに1で終わる。	!	なし 1
+falseを勧める項目が無ければ、falseを出す。	{"top": {"list": ["x", "ROOT/y"], "flag": true, "nested": {"value": "z"}}}	top.off: false 1

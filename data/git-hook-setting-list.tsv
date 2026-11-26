@@ -1,0 +1,6 @@
+# 導入先の.git/configに足すgitのフックの一覧。列は、名前（hook.<名前>.commandの<名前>）、イベント、ハーネスの場所からのコマンド、足す導入先（all：すべて、harness：ハーネスのリポジトリだけ）である。
+# 理由は、.harness/docs/features/protection.mdの節「gitのフック」に書く。scripts/find-missing-git-hook-setting.shが、足してあるかを確かめるときに読む。
+harness-protected-branch	pre-push	scripts/deny-protected-branch-push.sh	all
+harness-secret-pre-push	pre-push	scripts/find-secret-in-commit.sh pre-push	all
+harness-secret-pre-commit	pre-commit	scripts/find-secret-in-commit.sh pre-commit	all
+harness-commit-message	commit-msg	scripts/find-banned-word.sh	harness

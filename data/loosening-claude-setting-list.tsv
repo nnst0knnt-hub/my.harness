@@ -1,0 +1,47 @@
+# scripts/print-claude-setting-status.shが読む、Claude Codeの設定のキーの一覧。キーを選んだ理由は、.harness/docs/features/protection.mdの節「環境を確かめるスクリプト」に書く。
+# 列は、状態、読むファイル、キー、止める値、起きること、直し方である。状態は、ハーネスの保護を止める値の「働かない」か、保護を緩めるかサンドボックスの外で動く項目の「確かめる」である。
+# 読むファイルは、PCと導入先（~/.claude/settings.json、.claude/settings.json、.claude/settings.local.json）、導入先（後ろの2つ）、PC（~/.claude/settings.jsonだけ）、.mcp.jsonのどれかである。キーは「.」で区切る。
+# 働かないの行は、Claude Codeが実際に使うファイルの値が止める値と同じときに示す。止める値の「*」は、値があれば示すことを表す。確かめるの行は、ファイルごとに、falseでない値をすべて示し、止める値が「*」でなければ、その名前のキーを中に持つ項目だけを示す。
+# 止める値が「~」で始まる行は、状態に関わらず、ファイルごとに、一覧の文字列のうち「~」の後ろの正規表現に当たるものを示す。Claude Codeは、権限のルールとexcludedCommandsを、すべてのファイルから合わせて使うためである。
+働かない	導入先	sandbox.enabled	false	シェルのコマンドが、サンドボックスなしで動きます。	チームが追跡する.claude/settings.jsonは変えずに、.claude/settings.local.jsonでtrueにしてください（.claude/settings.local.jsonの値が先に当たります）。
+働かない	導入先	sandbox.failIfUnavailable	false	サンドボックスの依存が動かないPCで、Claude Codeがサンドボックスなしで起動します。	チームが追跡する.claude/settings.jsonは変えずに、.claude/settings.local.jsonでtrueにしてください（.claude/settings.local.jsonの値が先に当たります）。
+働かない	PCと導入先	disableAllHooks	true	ハーネスのフックが動かず、git push、git fetch、git pull、gh、glabを判定しません。セッションの始めのルールも渡りません。	書いたファイルから消すか、.claude/settings.local.jsonでfalseにしてください（.claude/settings.local.jsonの値が先に当たります）。
+働かない	PCと導入先	enabledPlugins.my-harness@nnst0knnt	false	ハーネスのプラグインが無効になり、フック、スキル、レビュー役が動きません。	書いたファイルから消すか、.claude/settings.local.jsonでtrueにしてください（.claude/settings.local.jsonの値が先に当たります）。
+働かない	PCと導入先	sandbox.enableWeakerNestedSandbox	true	LinuxとWSL2のサンドボックスが、プロセスの情報（/proc）を中のコマンドに見せます。	コンテナーの外で使うなら、書いたファイルから消してください。
+働かない	PCと導入先	sandbox.enableWeakerNetworkIsolation	true	macOSで、サンドボックスの中のコマンドが、証明書を確かめるサービス（com.apple.trustd.agent）を通して、外へ情報を送れます。	書いたファイルから消してください。
+働かない	PCと導入先	sandbox.network.allowAllUnixSockets	true	サンドボックスの中のコマンドが、すべてのUnixソケット（例：dockerのソケット）につなぎ、サンドボックスの外のプログラムを動かせます。	書いたファイルから消し、要るソケットだけをmacOSのallowUnixSocketsに書いてください。
+働かない	PC	sandbox.network.allowLocalBinding	true	macOSで、すべてのプロジェクトのサンドボックスの中のコマンドが、ポートで待ち受け、localhostのすべてのポートにつなげます。	書いたファイルから消してください。手元のサーバーを使うテストが要るプロジェクトでは、人がClaude Codeの外で動かすか、そのプロジェクトの.claude/settings.local.jsonに書いてください。
+働かない	PCと導入先	sandbox.network.httpProxyPort	*	サンドボックスのHTTPの通信が自前のプロキシを通り、拒否する通信先（GitHub、GitLab）と通信の確認が当たりません。	書いたファイルから消してください。
+働かない	PCと導入先	sandbox.network.socksProxyPort	*	サンドボックスのSOCKSの通信が自前のプロキシを通り、拒否する通信先（GitHub、GitLab）と通信の確認が当たりません。	書いたファイルから消してください。
+働かない	PC	sandbox.filesystem.disabled	true	シェルのコマンドが、サンドボックスの読み取りと書き込みの制限なしで動き、秘密情報のファイルの読み取りと.harness/への書き込みも止まりません。	書いたファイルから消してください。
+働かない	PC	sandbox.allowNestedUserNamespaces	true	LinuxとWSL2で、サンドボックスの中のコマンドが、サンドボックスの外でコードを動かせます。	書いたファイルから消してください。
+働かない	PCと導入先	permissions.deny	~^Bash\(((git (push|fetch)|glab|gh)([ :)*]|$)|bash .*exec-with-pinned-git-directory\.sh \* .)	フックは、git push、git fetch、glab、確認を求めるghを、外で動かすスクリプトとフックの記録の名前だけの呼び出しに書き換えるので、このdenyのルール（もとのコマンドの形と、スクリプトの後ろに語を書いた形）は書き換えたコマンドに当たらず、止めません。	書いたファイルから消してください。判定のスクリプトが、止める形（例：--no-verify、保護するブランチへのpush）を止めます。止めたい形が判定に無ければ、add-ruleで記録してください。add-ruleは、判定を越える形をIssueに書かず、置き場所を聞きます。
+働かない	PCと導入先	permissions.ask	~^Bash\(((git (push|fetch)|glab)([ :)*]|$)|bash .*exec-with-pinned-git-directory\.sh \* .)	フックは、git push、git fetch、glabを、外で動かすスクリプトとフックの記録の名前だけの呼び出しに書き換えるので、このaskのルール（もとのコマンドの形と、スクリプトの後ろに語を書いた形）は書き換えたコマンドに当たらず、確認を出しません。	書いたファイルから消してください。判定のスクリプトが、書き込みとforce pushに確認を求めます。確認を求めたい形が判定に無ければ、add-ruleで記録してください。add-ruleは、判定を越える形をIssueに書かず、置き場所を聞きます。
+働かない	PCと導入先	sandbox.excludedCommands	~^((git (push|fetch)|glab)([ :*]|$)|git([:*]| \*|$))	フックが書き換えなかったとき（例：jqが無い、フックが動かない）に、このコマンド（git *のようなgitのすべてに当たる広い値は、git push、git fetchと、フックの当たらないgit -C . push）が、gitのフォルダーを固定せずにサンドボックスの外で動きます。	書いたファイルから消し、bash <ハーネスの場所>/hooks/exec-with-pinned-git-directory.sh *を足してください（docs/setup-guide.mdの節「PCの設定を足す」）。
+働かない	PC	sandbox.allowAppleEvents	true	macOSで、サンドボックスの中のコマンドが、確認なしでほかのアプリをサンドボックスの外で起動できます。	書いたファイルから消してください（openを使うなら、excludedCommandsに足すと、毎回確認が出ます）。
+確かめる	導入先	sandbox.excludedCommands	*	当たるコマンドが、サンドボックスの外ですべての権限で動き、git push、git fetch、git pull、gh、glabのほかは判定も当たりません。	足した覚えの無い値は、足した人に確かめてから、書いたファイルから消してください。
+確かめる	導入先	sandbox.network.allowedDomains	*	サンドボックスの中のコマンドが、確認なしでこの通信先に通信できます。	足した覚えの無い値は、足した人に確かめてから、書いたファイルから消してください。
+確かめる	導入先	sandbox.network.allowUnixSockets	*	macOSで、サンドボックスの中のコマンドが、このUnixソケット（例：dockerのソケット）につなげます。	足した覚えの無い値は、足した人に確かめてから、書いたファイルから消してください。
+確かめる	導入先	sandbox.network.allowMachLookup	*	macOSで、サンドボックスの中のコマンドが、このサービスを通してサンドボックスの外に届きます。	足した覚えの無い値は、足した人に確かめてから、書いたファイルから消してください。
+確かめる	導入先	sandbox.network.allowLocalBinding	*	macOSで、サンドボックスの中のコマンドが、ポートで待ち受け、localhostのすべてのポートにつなげます。認証の無いlocalhostのサービス（例：デバッガー）が、コマンドの代わりにサンドボックスの外で動けます。	足した覚えの無い値は、足した人に確かめてから、書いたファイルから消してください。
+確かめる	導入先	sandbox.filesystem.allowWrite	*	サンドボックスの中のコマンドが、このパスに書けます。	足した覚えの無い値は、足した人に確かめてから、書いたファイルから消してください。
+確かめる	導入先	sandbox.filesystem.allowRead	*	読み取りを禁止したパスの中でも、サンドボックスの中のコマンドがこのパスを読めます。	足した覚えの無い値は、足した人に確かめてから、書いたファイルから消してください。
+確かめる	導入先	permissions.allow	*	当たるツールが、確認なしで動きます。Editのルールのパスにはサンドボックスの中から書け、WebFetchのルールの通信先にはサンドボックスの中から通信できます。	足した覚えの無い値は、足した人に確かめてから、書いたファイルから消してください。
+確かめる	導入先	permissions.additionalDirectories	*	ファイルのツールとサンドボックスの中のコマンドが、このフォルダーを読み書きできます。	足した覚えの無い値は、足した人に確かめてから、書いたファイルから消してください。
+確かめる	導入先	enableAllProjectMcpServers	*	信頼したフォルダーでは、.mcp.jsonのMCPのサーバーが、確認なしでつながります。	足した覚えの無い値は、足した人に確かめてから、書いたファイルから消してください。
+確かめる	導入先	enabledMcpjsonServers	*	信頼したフォルダーでは、名前を書いた.mcp.jsonのMCPのサーバーが、確認なしでつながります。	足した覚えの無い値は、足した人に確かめてから、書いたファイルから消してください。
+確かめる	PCと導入先	hooks	*	フックのうち、typeがcommandのフックは、サンドボックスの外ですべての権限で動きます。	足した覚えの無い値は、足した人に確かめてから、書いたファイルから消してください。
+確かめる	PCと導入先	enabledPlugins	*	プラグインに入っている、typeがcommandのフック、ローカルのMCPのサーバー、モニター、LSPのサーバー、mod（Claude Codeの中で動くプラグインのコード）は、サンドボックスの外ですべての権限で動きます。組み込みの保護のmodが読み込まれない環境（管理の設定、managed-mcp.json、TeamかEnterpriseの/loginのどれも無い環境）では、modが、denyとaskのルールとPreToolUseのフックを越えて、ツールの呼び出しを許せます。	足した覚えの無い値は、足した人に確かめてから、書いたファイルから消してください。読み込んだmodは/pluginの表示で、modが受け取るイベントと頼む操作はclaude plugin validateの出力で確かめられます。
+確かめる	PCと導入先	statusLine	*	ステータスラインのコマンドが、サンドボックスの外ですべての権限で動きます。	足した覚えの無い値は、足した人に確かめてから、書いたファイルから消してください。
+確かめる	PCと導入先	fileSuggestion	*	ファイルの候補を出すコマンドが、サンドボックスの外ですべての権限で動きます。	足した覚えの無い値は、足した人に確かめてから、書いたファイルから消してください。
+確かめる	PCと導入先	apiKeyHelper	*	APIの認証の値を作るコマンドが、サンドボックスの外ですべての権限で動きます。	足した覚えの無い値は、足した人に確かめてから、書いたファイルから消してください。
+確かめる	PCと導入先	awsAuthRefresh	*	AWSの認証を更新するコマンドが、サンドボックスの外ですべての権限で動きます。	足した覚えの無い値は、足した人に確かめてから、書いたファイルから消してください。
+確かめる	PCと導入先	awsCredentialExport	*	AWSの認証の値を出すコマンドが、サンドボックスの外ですべての権限で動きます。	足した覚えの無い値は、足した人に確かめてから、書いたファイルから消してください。
+確かめる	PCと導入先	gcpAuthRefresh	*	Google Cloudの認証を更新するコマンドが、サンドボックスの外ですべての権限で動きます。	足した覚えの無い値は、足した人に確かめてから、書いたファイルから消してください。
+確かめる	PCと導入先	otelHeadersHelper	*	OpenTelemetryのヘッダーを作るコマンドが、サンドボックスの外ですべての権限で動きます。	足した覚えの無い値は、足した人に確かめてから、書いたファイルから消してください。
+確かめる	PCと導入先	extraKnownMarketplaces	headersHelper	マーケットプレイスの認証のヘッダーを作るコマンドが、サンドボックスの外ですべての権限で動きます。	足した覚えの無い値は、足した人に確かめてから、書いたファイルから消してください。
+確かめる	PCと導入先	additionalMarketplaces	headersHelper	マーケットプレイスの認証のヘッダーを作るコマンドが、サンドボックスの外ですべての権限で動きます（extraKnownMarketplacesの別名）。	足した覚えの無い値は、足した人に確かめてから、書いたファイルから消してください。
+確かめる	PC	processWrapper	*	Claude Codeが裏で起動するプロセスの前に、このコマンドが、サンドボックスの外ですべての権限で動きます。	足した覚えの無い値は、足した人に確かめてから、書いたファイルから消してください。
+確かめる	PC	sandbox.ripgrep	*	サンドボックスが使うripgrepが、このコマンドに変わります。	足した覚えの無い値は、足した人に確かめてから、書いたファイルから消してください。
+確かめる	PC	sshHostCommands	*	Claude CodeのDesktopで、SSHの接続先を出すこのコマンドが動きます。	足した覚えの無い値は、足した人に確かめてから、書いたファイルから消してください。
+確かめる	.mcp.json	mcpServers	*	ローカルのMCPのサーバーは、サンドボックスの外ですべての権限で動きます。	足した覚えの無い値は、足した人に確かめてから、書いたファイルから消してください。
