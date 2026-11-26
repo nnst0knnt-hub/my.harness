@@ -1,0 +1,11 @@
+# expect.shのケースの一覧。列は、説明の文、関数、引数1、引数2、期待する戻り値である。
+# 関数がexpectなら引数は期待と実際、summaryなら引数はケースの数と失敗の数である。
+# expect_then_summaryは、期待と実際でexpectを呼んでから、まとめを出す。
+期待と実際が同じ値を渡すと、0を返す。	expect	abc	abc	0
+期待と実際が違う値を渡すと、1を返す。	expect	abc	abd	1
+空白を含む同じ値を渡すと、0を返す。	expect	a b	a b	0
+後ろの空白だけが違う値を渡すと、1を返す。	expect	a b	a b 	1
+失敗が0件のときにまとめを出すと、0を返す。	summary	3	0	0
+失敗が1件のときにまとめを出すと、1を返す。	summary	3	1	1
+違う値でexpectを呼んでからまとめを出すと、1を返す。	expect_then_summary	abc	abd	1
+同じ値でexpectを呼んでからまとめを出すと、0を返す。	expect_then_summary	abc	abc	0
